@@ -28,6 +28,47 @@ async function addConsoleLog(
   await db.insert(consoleLogsTable).values({ userId, sessionId, level, message });
 }
 
+const SIMULATED_CONNECTION_DELAY_MS = 8_000;
+
+async function promoteReadySession(session: typeof pairingSessionsTable.$inferSelect) {
+  const elapsed = Date.now() - session.createdAt.getTime();
+  if (
+    session.connected ||
+    session.expiresAt.getTime() <= Date.now() ||
+    elapsed < SIMULATED_CONNECTION_DELAY_MS
+  ) {
+    return session;
+  }
+
+  await db
+    .update(pairingSessionsTable)
+    .set({ connected: true, connectedAt: new Date(), lastSeen: new Date() })
+    .where(
+      and(
+        eq(pairingSessionsTable.sessionId, session.sessionId),
+        eq(pairingSessionsTable.connected, false),
+      ),
+    );
+
+  await addConsoleLog(
+    session.userId,
+    session.sessionId,
+    "success",
+    `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`,
+  );
+  await addConsoleLog(session.userId, session.sessionId, "info", `[SYSTEM] Initializing bot modules...`);
+  await addConsoleLog(session.userId, session.sessionId, "info", `[PLUGIN] Loading command handlers...`);
+  await addConsoleLog(session.userId, session.sessionId, "success", `[READY] ᴍᴀᴅᴀʀᴀ x-ᴍᴅ is online and ready!`);
+
+  const [updatedSession] = await db
+    .select()
+    .from(pairingSessionsTable)
+    .where(eq(pairingSessionsTable.sessionId, session.sessionId))
+    .limit(1);
+
+  return updatedSession ?? session;
+}
+
 // POST /pairing/request
 router.post("/pairing/request", async (req, res): Promise<void> => {
   const user = await getUserFromRequest(req);
@@ -81,23 +122,6 @@ router.post("/pairing/request", async (req, res): Promise<void> => {
 
   req.log.info({ userId: user.id, sessionId }, "Pairing session created");
 
-  // Simulate auto-connect after a short delay (in a real app this would be a webhook)
-  // We'll just mark it connected right away for demo purposes
-  setTimeout(async () => {
-    try {
-      await db
-        .update(pairingSessionsTable)
-        .set({ connected: true, connectedAt: new Date(), lastSeen: new Date() })
-        .where(eq(pairingSessionsTable.sessionId, sessionId));
-      await addConsoleLog(user.id, sessionId, "success", `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${phoneNumber}!`);
-      await addConsoleLog(user.id, sessionId, "info", `[SYSTEM] Initializing bot modules...`);
-      await addConsoleLog(user.id, sessionId, "info", `[PLUGIN] Loading command handlers...`);
-      await addConsoleLog(user.id, sessionId, "success", `[READY] ᴍᴀᴅᴀʀᴀ x-ᴍᴅ is online and ready!`);
-    } catch {
-      // ignore
-    }
-  }, 8000);
-
   res.json({
     sessionId,
     pairingCode,
@@ -114,12 +138,16 @@ router.get("/pairing/status", async (req, res): Promise<void> => {
     return;
   }
 
-  const [session] = await db
+  let [session] = await db
     .select()
     .from(pairingSessionsTable)
     .where(eq(pairingSessionsTable.userId, user.id))
     .orderBy(desc(pairingSessionsTable.createdAt))
     .limit(1);
+
+  if (session && !session.connected) {
+    session = await promoteReadySession(session);
+  }
 
   if (!session || !session.connected) {
     res.json({
