@@ -1,0 +1,430 @@
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  useRequestPairing,
+  useGetPairingStatus,
+  getGetPairingStatusQueryKey,
+  useDisconnectBot,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Smartphone,
+  QrCode,
+  PowerOff,
+  Loader2,
+  Link2,
+  ShieldCheck,
+  Eye,
+  Zap,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const pairingSchema = z.object({
+  phoneNumber: z
+    .string()
+    .min(10, "Valid phone number required with country code"),
+  method: z.enum(["qr", "code"]),
+});
+
+type PairingFormValues = z.infer<typeof pairingSchema>;
+
+export function Dashboard() {
+  const queryClient = useQueryClient();
+  const { data: status, isLoading: isStatusLoading } = useGetPairingStatus({
+    query: {
+      refetchInterval: 3000,
+      queryKey: getGetPairingStatusQueryKey(),
+    },
+  });
+
+  const requestPairing = useRequestPairing();
+  const disconnectBot = useDisconnectBot();
+  const [activeRequest, setActiveRequest] = useState<{
+    type: "qr" | "code";
+    data: string;
+  } | null>(null);
+  const [uptime, setUptime] = useState<number>(0);
+
+  const form = useForm<PairingFormValues>({
+    resolver: zodResolver(pairingSchema),
+    defaultValues: {
+      phoneNumber: "",
+      method: "code",
+    },
+  });
+
+  // Uptime counter
+  useEffect(() => {
+    if (status?.connected && status?.uptimeSeconds != null) {
+      setUptime(status.uptimeSeconds);
+      const interval = setInterval(() => {
+        setUptime((prev) => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [status?.connected, status?.uptimeSeconds]);
+
+  const formatUptime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const onSubmit = (data: PairingFormValues) => {
+    setActiveRequest(null);
+    requestPairing.mutate(
+      { data: { phoneNumber: data.phoneNumber, method: data.method } },
+      {
+        onSuccess: (res) => {
+          if (data.method === "code" && res.pairingCode) {
+            setActiveRequest({ type: "code", data: res.pairingCode });
+          } else if (data.method === "qr" && res.qrData) {
+            setActiveRequest({ type: "qr", data: res.qrData });
+          }
+        },
+      },
+    );
+  };
+
+  const handleDisconnect = () => {
+    disconnectBot.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetPairingStatusQueryKey(),
+        });
+        setActiveRequest(null);
+      },
+    });
+  };
+
+  if (isStatusLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center relative">
+        <div className="fixed inset-0 z-[-2] bg-background" />
+        <Loader2 className="h-8 w-8 text-primary animate-spin relative z-10" />
+      </div>
+    );
+  }
+
+  const isConnected = status?.connected;
+
+  return (
+    <div className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full space-y-8 relative">
+      <div
+        className="fixed inset-0 z-[-1] pointer-events-none"
+        style={{
+          backgroundImage: 'url(/sharingan.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          opacity: 0.18,
+        }}
+      />
+      <div className="fixed inset-0 z-[-2] bg-background" />
+
+      {/* Decorative spinning sharingan */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-[0.03] z-[-1] pointer-events-none animate-sharingan text-primary">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="2"/>
+          <circle cx="50" cy="50" r="12" fill="currentColor"/>
+          <g transform="translate(50, 18) scale(0.6)">
+            <circle cx="0" cy="0" r="10" fill="currentColor" />
+            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
+          </g>
+          <g transform="translate(22, 66) scale(0.6) rotate(120)">
+            <circle cx="0" cy="0" r="10" fill="currentColor" />
+            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
+          </g>
+          <g transform="translate(78, 66) scale(0.6) rotate(240)">
+            <circle cx="0" cy="0" r="10" fill="currentColor" />
+            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
+          </g>
+        </svg>
+      </div>
+
+      {/* Header & Status */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/40 border border-border p-6 rounded-2xl backdrop-blur-md">
+        <div>
+          <h1 className="text-3xl font-bold font-mono tracking-tight flex items-center gap-3">
+            Pairing Chamber
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm font-mono">
+            Manage your WhatsApp pairing session.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 border border-border/50 bg-background/80 px-4 py-2 rounded-lg">
+          <div className="flex flex-col">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
+              Status
+            </span>
+            <div className="flex items-center gap-2">
+              <motion.div
+                animate={{ opacity: isConnected ? [0.5, 1, 0.5] : 1 }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className={`h-3 w-3 rounded-full ${isConnected ? "bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.8)]" : "bg-destructive"}`}
+              />
+              <span className="font-mono font-bold tracking-widest uppercase text-sm">
+                {isConnected ? "Connected" : "Disconnected"}
+              </span>
+            </div>
+          </div>
+
+          {isConnected && (
+            <div className="pl-4 border-l border-border/50 flex flex-col">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
+                Uptime
+              </span>
+              <span className="font-mono font-bold tracking-widest text-sm text-primary">
+                {formatUptime(uptime)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 relative z-10">
+        {/* Pairing Panel */}
+        <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="font-mono text-xl">
+              Link Your Device
+            </CardTitle>
+            <CardDescription className="font-mono">
+              Enter details to pair a new device
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isConnected ? (
+              <div className="flex flex-col items-center justify-center p-8 space-y-6 text-center h-[300px] border border-primary/20 bg-primary/5 rounded-xl">
+                <ShieldCheck className="w-16 h-16 text-primary" />
+                <div>
+                  <h3 className="text-xl font-bold font-mono text-foreground mb-2">
+                    Connected
+                  </h3>
+                  <p className="text-muted-foreground font-mono text-sm max-w-xs">
+                    Paired with: {status.phoneNumber}
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  className="font-mono uppercase tracking-widest mt-4"
+                  onClick={handleDisconnect}
+                  disabled={disconnectBot.isPending}
+                >
+                  {disconnectBot.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <PowerOff className="h-4 w-4 mr-2" />
+                  )}
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-mono text-xs uppercase tracking-wider">
+                          Phone Number
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Smartphone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                            <Input
+                              placeholder="e.g. 1234567890"
+                              className="pl-10 font-mono bg-background/80"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="method"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-mono text-xs uppercase tracking-wider">
+                          Pairing Method
+                        </FormLabel>
+                        <div className="flex gap-4">
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("code")}
+                            className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                              field.value === "code"
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border/50 bg-background/80 text-muted-foreground hover:border-primary/50"
+                            }`}
+                          >
+                            <Link2 className="h-6 w-6 mb-2" />
+                            <span className="font-mono text-sm font-bold tracking-widest uppercase">
+                              8-Digit
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("qr")}
+                            className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                              field.value === "qr"
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border/50 bg-background/80 text-muted-foreground hover:border-primary/50"
+                            }`}
+                          >
+                            <QrCode className="h-6 w-6 mb-2" />
+                            <span className="font-mono text-sm font-bold tracking-widest uppercase">
+                              QR Scan
+                            </span>
+                          </button>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full font-mono uppercase tracking-widest shadow-[0_0_15px_hsl(var(--primary)/0.4)]"
+                    disabled={requestPairing.isPending}
+                  >
+                    {requestPairing.isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    ) : (
+                      <Zap className="h-5 w-5 mr-2" />
+                    )}
+                    Begin Pairing
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Output Panel */}
+        <Card className="border-border/50 bg-card/60 backdrop-blur-md overflow-hidden flex flex-col">
+          <CardHeader className="bg-background/60 border-b border-border/50 pb-4">
+            <CardTitle className="font-mono text-xl flex items-center justify-between">
+              Pairing Status
+              {activeRequest && (
+                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col items-center justify-center p-8 min-h-[300px]">
+            <AnimatePresence mode="wait">
+              {isConnected ? (
+                <motion.div
+                  key="connected"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center"
+                >
+                  <div className="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 border border-primary/20">
+                    <ShieldCheck className="h-10 w-10 text-primary" />
+                  </div>
+                  <h3 className="font-mono font-bold text-2xl mb-2 text-foreground">
+                    Bot Online
+                  </h3>
+                  <p className="text-muted-foreground text-sm max-w-sm font-mono">
+                    Bot is successfully connected. Go to the console to view
+                    logs.
+                  </p>
+                </motion.div>
+              ) : activeRequest ? (
+                <motion.div
+                  key="request"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="w-full h-full flex flex-col items-center justify-center space-y-6"
+                >
+                  {activeRequest.type === "code" ? (
+                    <div className="text-center w-full">
+                      <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
+                        Pairing Code
+                      </p>
+                      <div className="bg-background border border-primary/30 py-6 rounded-xl font-mono text-5xl font-black tracking-[0.5em] text-primary shadow-inner">
+                        {activeRequest.data}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-4 font-mono">
+                        Enter this code in your WhatsApp linked devices screen.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
+                        Scan QR Code
+                      </p>
+                      <div className="p-4 bg-white rounded-xl border border-border inline-block relative group overflow-hidden">
+                        <div className="w-48 h-48 border-4 border-dashed border-primary flex items-center justify-center relative bg-black/5">
+                          <QrCode className="w-32 h-32 text-primary opacity-80" />
+                          <div className="absolute top-0 w-full h-2 bg-primary/50 blur-[2px] animate-scan" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-4 font-mono">
+                        Open WhatsApp &gt; Linked Devices &gt; Scan QR.
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono break-all max-w-[250px] truncate mx-auto">
+                        Raw data: {activeRequest.data}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-muted-foreground/50"
+                >
+                  <Eye className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="font-mono uppercase tracking-widest text-sm">
+                    Ready to Pair
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="w-full mt-8 relative z-10">
+        <div className="w-full h-24 rounded-lg border border-border/50 bg-muted/40 backdrop-blur-sm flex items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+          <span className="text-xs tracking-widest text-muted-foreground uppercase font-mono">
+            Advertisement Space
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
