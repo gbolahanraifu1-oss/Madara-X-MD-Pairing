@@ -10,7 +10,10 @@ Create a new Vercel project from the same repository and set its **Root Director
 artifacts/api-server
 ```
 
-The included `vercel.json` installs the workspace dependencies from the repository root, builds the API package, and routes `/api/*` requests to the Express serverless function.
+The API directory is self-contained so Vercel can build it with the repository
+root set to `artifacts/api-server`. The included `vercel.json` installs the API
+dependencies, builds the package, and routes `/api/*` requests to the Express
+serverless function.
 
 Required environment variables:
 

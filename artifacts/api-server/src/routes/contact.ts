@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, contactMessagesTable } from "@workspace/db";
+import { db, contactMessagesTable } from "../lib/db";
 
 const router: IRouter = Router();
 
