@@ -1,8 +1,9 @@
 import { createRoot } from 'react-dom/client';
-import { setBaseUrl } from '@workspace/api-client-react';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import App from './App';
+import { getAuthToken } from './lib/auth-token';
 
 import './index.css';
 
@@ -75,6 +76,7 @@ const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 if (apiUrl) {
   setBaseUrl(apiUrl);
 }
+setAuthTokenGetter(getAuthToken);
 
 createRoot(document.getElementById('root')!).render(
   <AppErrorBoundary>

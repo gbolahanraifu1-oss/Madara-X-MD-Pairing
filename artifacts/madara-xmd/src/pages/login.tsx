@@ -3,12 +3,14 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useLogin } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useLogin } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { TerminalSquare, Loader2 } from "lucide-react";
+import { getApiErrorMessage, saveAuthToken } from "@/lib/auth-token";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,6 +23,7 @@ export function Login() {
   const [, setLocation] = useLocation();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const loginMutation = useLogin();
+  const queryClient = useQueryClient();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -35,11 +38,13 @@ export function Login() {
     loginMutation.mutate(
       { data },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          saveAuthToken(response.token);
+          queryClient.setQueryData(getGetMeQueryKey(), response.user);
           setLocation("/dashboard");
         },
-        onError: (err: any) => {
-          setErrorMsg(err?.response?.data?.error || "Failed to login. Check your credentials.");
+        onError: (err) => {
+          setErrorMsg(getApiErrorMessage(err, "Failed to login. Check your credentials."));
         },
       }
     );

@@ -356,9 +356,12 @@ components:
           $ref: "#/components/schemas/User"
         message:
           type: string
+        token:
+          type: string
       required:
         - user
         - message
+        - token
 
     RegisterInput:
       type: object

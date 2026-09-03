@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useLogout } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe, useLogout } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Moon, Sun, Eye, LayoutDashboard, Send, Home, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
@@ -11,16 +12,20 @@ import {
   FaTiktok
 } from "react-icons/fa6";
 import { SiReact } from "react-icons/si";
+import { clearAuthToken } from "@/lib/auth-token";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
+  const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
 
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSuccess: () => {
+        clearAuthToken();
+        queryClient.setQueryData(getGetMeQueryKey(), undefined);
         setLocation("/login");
       }
     });

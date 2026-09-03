@@ -3,12 +3,14 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRegister } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useRegister } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { TerminalSquare, Loader2 } from "lucide-react";
+import { getApiErrorMessage, saveAuthToken } from "@/lib/auth-token";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").regex(/^[a-zA-Z0-9_]+$/, "Alphanumeric only"),
@@ -22,6 +24,7 @@ export function Register() {
   const [, setLocation] = useLocation();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const registerMutation = useRegister();
+  const queryClient = useQueryClient();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -37,11 +40,13 @@ export function Register() {
     registerMutation.mutate(
       { data },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          saveAuthToken(response.token);
+          queryClient.setQueryData(getGetMeQueryKey(), response.user);
           setLocation("/dashboard");
         },
-        onError: (err: any) => {
-          setErrorMsg(err?.response?.data?.error || "Initialization failed. Try another alias.");
+        onError: (err) => {
+          setErrorMsg(getApiErrorMessage(err, "Initialization failed. Try another alias."));
         },
       }
     );

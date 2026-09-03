@@ -9,7 +9,7 @@ export function Console() {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   
-  const { data: logs, isLoading, isFetching } = useGetConsoleLogs({
+  const { data: logs, isLoading, isFetching, error } = useGetConsoleLogs({
     query: {
       refetchInterval: 3000,
       queryKey: getGetConsoleLogsQueryKey()
@@ -41,6 +41,12 @@ export function Console() {
     }
   };
 
+  const logEntries = Array.isArray(logs) ? logs : [];
+  const formatLogTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime()) ? "--:--:--.---" : format(date, "HH:mm:ss.SSS");
+  };
+
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -62,7 +68,7 @@ export function Console() {
             size="sm" 
             className="font-mono text-xs uppercase tracking-widest border-border/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
             onClick={handleClear}
-            disabled={clearLogs.isPending || (logs && logs.length === 0)}
+            disabled={clearLogs.isPending || logEntries.length === 0}
           >
             {clearLogs.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
             Clear Logs
@@ -87,7 +93,13 @@ export function Console() {
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-6 w-6 text-primary animate-spin" />
             </div>
-          ) : logs && logs.length > 0 ? (
+          ) : error ? (
+            <div className="h-full flex flex-col items-center justify-center text-destructive/80 text-center">
+              <Terminal className="h-12 w-12 mb-4" />
+              <p className="uppercase tracking-widest text-xs">Unable to load logs</p>
+              <p className="mt-2 text-xs text-muted-foreground">Please sign in again and retry.</p>
+            </div>
+          ) : logEntries.length > 0 ? (
             <div className="space-y-1">
               <div className="text-primary mb-4 opacity-70">
                 <p>Welcome to ᴍᴀᴅᴀʀᴀ x-ᴍᴅ Telemetry Console.</p>
@@ -96,10 +108,10 @@ export function Console() {
                 <p>--------------------------------------------------</p>
               </div>
               
-              {logs.map((log) => (
+              {logEntries.map((log) => (
                 <div key={log.id} className="flex gap-3 hover:bg-white/5 py-0.5 px-2 rounded-sm transition-colors">
                   <span className="text-muted-foreground/50 shrink-0">
-                    [{format(new Date(log.timestamp), "HH:mm:ss.SSS")}]
+                    [{formatLogTime(log.timestamp)}]
                   </span>
                   <span className={`uppercase tracking-widest w-16 shrink-0 ${getLogColor(log.level)}`}>
                     {log.level}
