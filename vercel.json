@@ -5,7 +5,7 @@
   "outputDirectory": "artifacts/madara-xmd/dist/public",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
   ]
