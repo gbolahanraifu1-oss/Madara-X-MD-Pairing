@@ -7,6 +7,14 @@ import { motion } from "framer-motion";
 
 export function Home() {
   const { data: stats } = useGetPairingStats();
+  const formatCount = (value: unknown) =>
+    typeof value === "number" && Number.isFinite(value)
+      ? value.toLocaleString()
+      : "...";
+  const formatUptime = (value: unknown) =>
+    typeof value === "number" && Number.isFinite(value)
+      ? `${(value / 3600).toFixed(1)}h`
+      : "...";
 
   const container = {
     hidden: { opacity: 0 },
@@ -121,25 +129,25 @@ export function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center max-w-4xl mx-auto">
             <div className="space-y-2">
               <div className="text-4xl font-mono font-bold text-primary">
-                {stats ? stats.activeSessions.toLocaleString() : "..."}
+                {formatCount(stats?.activeSessions)}
               </div>
               <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Active Sessions</div>
             </div>
             <div className="space-y-2">
               <div className="text-4xl font-mono font-bold text-foreground">
-                {stats ? stats.totalUsers.toLocaleString() : "..."}
+                {formatCount(stats?.totalUsers)}
               </div>
               <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Total Users</div>
             </div>
             <div className="space-y-2">
               <div className="text-4xl font-mono font-bold text-foreground">
-                {stats ? stats.totalSessions.toLocaleString() : "..."}
+                {formatCount(stats?.totalSessions)}
               </div>
               <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Total Pairings</div>
             </div>
             <div className="space-y-2">
               <div className="text-4xl font-mono font-bold text-foreground">
-                {stats ? `${(stats.averageUptimeSeconds / 3600).toFixed(1)}h` : "..."}
+                {formatUptime(stats?.averageUptimeSeconds)}
               </div>
               <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Avg Uptime</div>
             </div>
