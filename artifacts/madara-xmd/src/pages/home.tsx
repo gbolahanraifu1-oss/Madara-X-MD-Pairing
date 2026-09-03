@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap, Shield, Eye, Bot, Activity } from "lucide-react";
 import { motion } from "framer-motion";
+import { getAuthToken } from "@/lib/auth-token";
 
 export function Home() {
   const { data: stats } = useGetPairingStats();
+  const hasSession = Boolean(getAuthToken());
+  const protectedDestination = hasSession ? "/dashboard" : "/login";
   const formatCount = (value: unknown) =>
     typeof value === "number" && Number.isFinite(value)
       ? value.toLocaleString()
@@ -102,12 +105,12 @@ export function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
           >
             <Button size="lg" asChild className="text-lg font-mono shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)]">
-              <Link href="/dashboard">
+              <Link href={protectedDestination}>
                 <Zap className="mr-2 h-5 w-5" /> Activate Bot
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-lg font-mono border-primary/30 hover:border-primary text-foreground">
-              <Link href="/console">
+              <Link href={hasSession ? "/console" : "/login"}>
                 <Activity className="mr-2 h-5 w-5" /> View Console
               </Link>
             </Button>
