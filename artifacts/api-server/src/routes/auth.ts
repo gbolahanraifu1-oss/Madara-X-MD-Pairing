@@ -2,8 +2,8 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { eq, and, gt } from "drizzle-orm";
-import { db, usersTable, sessionsTable } from "../lib/db";
-import { logger } from "../lib/logger";
+import { db, usersTable, sessionsTable } from "../lib/db.js";
+import { logger } from "../lib/logger.js";
 
 const router: IRouter = Router();
 
