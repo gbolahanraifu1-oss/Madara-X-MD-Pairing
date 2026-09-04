@@ -1,10 +1,10 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import crypto from "node:crypto";
 import { eq, and, desc } from "drizzle-orm";
 import { db, pairingSessionsTable, consoleLogsTable } from "../lib/db.js";
 import { getUserFromRequest } from "./auth.js";
 
-const router: IRouter = Router();
+const router = Router();
 
 function generateSessionId(): string {
   return crypto.randomBytes(16).toString("hex");
