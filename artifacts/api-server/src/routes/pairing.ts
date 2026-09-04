@@ -70,7 +70,7 @@ async function promoteReadySession(session: typeof pairingSessionsTable.$inferSe
 }
 
 // POST /pairing/request
-router.post("/pairing/request", async (req, res): Promise<void> => {
+router.post("/pairing/request", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
@@ -89,7 +89,6 @@ router.post("/pairing/request", async (req, res): Promise<void> => {
     return;
   }
 
-  // Invalidate any existing sessions for this user
   await db
     .update(pairingSessionsTable)
     .set({ connected: false })
@@ -98,7 +97,7 @@ router.post("/pairing/request", async (req, res): Promise<void> => {
   const sessionId = generateSessionId();
   const pairingCode = method === "code" ? generatePairingCode() : null;
   const qrData = method === "qr" ? generateQrData(phoneNumber, sessionId) : null;
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
   await db.insert(pairingSessionsTable).values({
     userId: user.id,
@@ -131,7 +130,7 @@ router.post("/pairing/request", async (req, res): Promise<void> => {
 });
 
 // GET /pairing/status
-router.get("/pairing/status", async (req, res): Promise<void> => {
+router.get("/pairing/status", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
@@ -161,7 +160,6 @@ router.get("/pairing/status", async (req, res): Promise<void> => {
     return;
   }
 
-  // Update lastSeen
   await db
     .update(pairingSessionsTable)
     .set({ lastSeen: new Date() })
@@ -182,7 +180,7 @@ router.get("/pairing/status", async (req, res): Promise<void> => {
 });
 
 // POST /pairing/disconnect
-router.post("/pairing/disconnect", async (req, res): Promise<void> => {
+router.post("/pairing/disconnect", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
@@ -212,7 +210,7 @@ router.post("/pairing/disconnect", async (req, res): Promise<void> => {
 });
 
 // GET /pairing/stats
-router.get("/pairing/stats", async (req, res): Promise<void> => {
+router.get("/pairing/stats", async (req: any, res: any): Promise<void> => {
   const allSessions = await db.select().from(pairingSessionsTable);
   const activeSessions = allSessions.filter((s) => s.connected);
 
