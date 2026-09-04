@@ -1,7 +1,7 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import { db, contactMessagesTable } from "../lib/db";
 
-const router: IRouter = Router();
+const router = Router();
 
 // POST /contact
 router.post("/contact", async (req, res): Promise<void> => {
