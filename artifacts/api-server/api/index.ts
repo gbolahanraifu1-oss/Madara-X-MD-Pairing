@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import app from "../src/app";
+import app from "../src/app.js";
 
 /**
  * Vercel invokes this Express app as a request-scoped serverless function.
