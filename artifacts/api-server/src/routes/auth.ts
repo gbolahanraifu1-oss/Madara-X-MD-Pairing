@@ -33,7 +33,7 @@ async function getUserFromRequest(req: any): Promise<{ id: number; email: string
 }
 
 // POST /auth/register
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", async (req: any, res: any): Promise<void> => {
   const { email, username, password } = req.body;
 
   if (!email || !username || !password) {
@@ -51,7 +51,6 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  // Check if email or username exists
   const [existing] = await db
     .select()
     .from(usersTable)
@@ -83,9 +82,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  // Create session
   const token = generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   await db.insert(sessionsTable).values({
     userId: user.id,
@@ -108,7 +106,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 });
 
 // POST /auth/login
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", async (req: any, res: any): Promise<void> => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -156,7 +154,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 });
 
 // POST /auth/logout
-router.post("/auth/logout", async (req, res): Promise<void> => {
+router.post("/auth/logout", async (req: any, res: any): Promise<void> => {
   const authHeader = req.headers["authorization"] as string | undefined;
   const token = authHeader?.replace("Bearer ", "").trim();
 
@@ -168,7 +166,7 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 // GET /auth/me
-router.get("/auth/me", async (req, res): Promise<void> => {
+router.get("/auth/me", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
 
   if (!user) {
@@ -185,7 +183,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
 });
 
 // POST /auth/forgot-password
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/forgot-password", async (req: any, res: any): Promise<void> => {
   const { email } = req.body;
 
   if (!email) {
@@ -200,7 +198,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 
   if (user) {
     const resetToken = generateToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     await db
       .update(usersTable)
@@ -208,15 +206,13 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
       .where(eq(usersTable.id, user.id));
 
     logger.info({ userId: user.id }, "Password reset token generated");
-    // In production: send email here
   }
 
-  // Always return 200 to prevent email enumeration
   res.json({ message: "If an account exists with that email, a reset link has been sent." });
 });
 
 // POST /auth/reset-password
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", async (req: any, res: any): Promise<void> => {
   const { token, password } = req.body;
 
   if (!token || !password) {
