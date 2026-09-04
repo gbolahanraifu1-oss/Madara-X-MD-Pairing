@@ -1,9 +1,9 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, consoleLogsTable } from "../lib/db.js";
 import { getUserFromRequest } from "./auth.js";
 
-const router: IRouter = Router();
+const router = Router();
 
 // GET /console/logs
 router.get("/console/logs", async (req, res): Promise<void> => {
