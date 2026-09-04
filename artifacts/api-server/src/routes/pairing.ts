@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import crypto from "node:crypto";
 import { eq, and, desc } from "drizzle-orm";
-import { db, pairingSessionsTable, consoleLogsTable } from "../lib/db";
-import { getUserFromRequest } from "./auth";
+import { db, pairingSessionsTable, consoleLogsTable } from "../lib/db.js";
+import { getUserFromRequest } from "./auth.js";
 
 const router: IRouter = Router();
 
