@@ -11,14 +11,14 @@ app.use(
   pinoHttp({
     logger,
     serializers: {
-      req(req) {
+      req(req: import("http").IncomingMessage) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split("?")[0],
         };
       },
-      res(res) {
+      res(res: import("http").ServerResponse) {
         return {
           statusCode: res.statusCode,
         };
