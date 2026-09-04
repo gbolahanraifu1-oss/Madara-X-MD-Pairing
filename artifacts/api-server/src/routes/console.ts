@@ -6,7 +6,7 @@ import { getUserFromRequest } from "./auth.js";
 const router = Router();
 
 // GET /console/logs
-router.get("/console/logs", async (req, res): Promise<void> => {
+router.get("/console/logs", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
@@ -32,7 +32,7 @@ router.get("/console/logs", async (req, res): Promise<void> => {
 });
 
 // POST /console/clear
-router.post("/console/clear", async (req, res): Promise<void> => {
+router.post("/console/clear", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
