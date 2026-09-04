@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { db, contactMessagesTable } from "../lib/db";
+import { db, contactMessagesTable } from "../lib/db.js";
 
 const router = Router();
 
 // POST /contact
-router.post("/contact", async (req, res): Promise<void> => {
+router.post("/contact", async (req: any, res: any): Promise<void> => {
   const { name, email, subject, message } = req.body;
 
   if (!name || !email || !subject || !message) {
