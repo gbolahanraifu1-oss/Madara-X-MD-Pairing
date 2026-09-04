@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, consoleLogsTable } from "../lib/db";
-import { getUserFromRequest } from "./auth";
+import { db, consoleLogsTable } from "../lib/db.js";
+import { getUserFromRequest } from "./auth.js";
 
 const router: IRouter = Router();
 
