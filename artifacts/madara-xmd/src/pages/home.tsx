@@ -178,7 +178,7 @@ export function Home() {
                 <CardHeader>
                   <Bot className="h-10 w-10 text-primary mb-2" />
                   <CardTitle className="font-mono">Instant Pairing</CardTitle>
-                  <CardDescription className="font-sans">Connect your bot in seconds using our ultra-fast QR or 8-digit code protocol.</CardDescription>
+                  <CardDescription className="font-sans">Connect your bot in seconds using our 8-digit pairing code protocol.</CardDescription>
                 </CardHeader>
               </Card>
             </motion.div>
@@ -206,13 +206,58 @@ export function Home() {
         </div>
       </section>
 
-      {/* Ad Banner Placeholder 2 */}
-      <div className="w-full max-w-4xl mx-auto px-4 mb-24">
-        <div className="w-full h-24 md:h-32 rounded-lg border border-border/50 bg-muted/30 flex items-center justify-center overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-          <span className="text-xs tracking-widest text-muted-foreground uppercase font-mono">Advertisement</span>
+      {/* Public guide content for visitors and search crawlers */}
+      <section className="w-full border-y border-border/40 bg-card/20 py-20">
+        <div className="container mx-auto max-w-6xl px-4 md:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-bold font-mono tracking-tight md:text-4xl">
+              A simple control panel for your WhatsApp automation
+            </h2>
+            <p className="mt-5 text-base leading-8 text-muted-foreground">
+              ᴍᴀᴅᴀʀᴀ x-ᴍᴅ gives bot owners one place to start a WhatsApp session,
+              confirm its connection, and follow live activity. The public site
+              explains the pairing flow before an account is needed; the dashboard
+              is reserved for authenticated session management.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <Card className="bg-card/50 border-primary/10">
+              <CardHeader><CardTitle className="font-mono">1. Create an account</CardTitle></CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                Register an account to keep your pairing session and access the private dashboard.
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-primary/10">
+              <CardHeader><CardTitle className="font-mono">2. Request a code</CardTitle></CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                Enter your WhatsApp number with its country code and request an 8-digit pairing code.
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-primary/10">
+              <CardHeader><CardTitle className="font-mono">3. Monitor the session</CardTitle></CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                After WhatsApp confirms the code, use the dashboard status and console to monitor the connected bot.
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mx-auto mt-14 max-w-3xl space-y-6 text-sm leading-8 text-muted-foreground">
+            <div>
+              <h3 className="font-mono text-lg font-semibold text-foreground">What is the pairing code?</h3>
+              <p className="mt-2">The pairing code links a WhatsApp account to the bot session running on its configured server. Keep the code private and enter it only in WhatsApp&apos;s linked-devices flow.</p>
+            </div>
+            <div>
+              <h3 className="font-mono text-lg font-semibold text-foreground">Where can I see connection activity?</h3>
+              <p className="mt-2">Signed-in users can open the Console to view session events and return to the Dashboard using the navigation menu. Disconnecting a session stops the active bot connection.</p>
+            </div>
+            <div>
+              <h3 className="font-mono text-lg font-semibold text-foreground">Is an account required?</h3>
+              <p className="mt-2">Yes. Account access keeps pairing controls and session information separate from this public guide.</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
