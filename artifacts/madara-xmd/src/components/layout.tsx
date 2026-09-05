@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { getGetMeQueryKey, useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Moon, Sun, Eye, LayoutDashboard, Send, Home, LogOut } from "lucide-react";
+import { Moon, Sun, Eye, LayoutDashboard, Send, Home, LogOut, Menu, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
 import {
@@ -20,6 +20,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const logout = useLogout();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout.mutate(undefined, {
@@ -77,6 +78,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
+              className="h-9 w-9 md:hidden"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-9 w-9"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
@@ -111,6 +122,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="border-t border-border/40 bg-background/98 md:hidden">
+            <nav className="container flex flex-col gap-1 px-4 py-3" aria-label="Mobile navigation">
+              {navLinks.map((link) => {
+                if (link.protected && !user) return null;
+                const isActive = location === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={"flex items-center gap-3 rounded-md px-3 py-3 font-mono text-sm transition-colors hover:bg-primary/10 hover:text-primary " + (isActive ? "bg-primary/10 text-primary" : "text-foreground/70")}
+                  >
+                    <link.icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
