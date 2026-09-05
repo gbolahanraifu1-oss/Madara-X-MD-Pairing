@@ -17,7 +17,7 @@ async function botRequest(path: string, init: RequestInit = {}): Promise<any> {
     throw new Error('BOT_URL is not configured on the web API');
   }
 
-  const response = await fetch([`]${BOT_URL}${path}[`], {
+  const response = await fetch(`${BOT_URL}${path}`, {
     ...init,
     headers: {
       accept: 'application/json',
@@ -35,13 +35,13 @@ async function botRequest(path: string, init: RequestInit = {}): Promise<any> {
   }
 
   if (!response.ok) {
-    throw new Error(body.error || [`]Bot API returned HTTP ${response.status}[`]);
+    throw new Error(body.error || `Bot API returned HTTP ${response.status}`);
   }
   return body;
 }
 
 async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) {
-  const botStatus = await botRequest([`/status?phone=${encodeURIComponent(session.phoneNumber)}[`]);
+  const botStatus = await botRequest(`/status?phone=${encodeURIComponent(session.phoneNumber)}`);
   const connected = Boolean(botStatus.connected);
 
   if (connected === session.connected) return session;
@@ -60,8 +60,8 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
     session.sessionId,
     connected ? 'success' : 'warn',
     connected
-      ? [`[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}![`]
-      : [`[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}[`],
+      ? `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`
+      : `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
   );
 
   const [updatedSession] = await db
@@ -101,7 +101,7 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
 
   let botPair: any;
   try {
-    botPair = await botRequest([`/pair?phone=${encodeURIComponent(phone)}[`]);
+    botPair = await botRequest(`/pair?phone=${encodeURIComponent(phone)}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The VPS bot could not create a pairing code';
     res.status(502).json({ error: message });
@@ -133,8 +133,8 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     expiresAt,
   });
 
-  await addConsoleLog(user.id, sessionId, 'info', [`[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Pairing code requested from VPS for ${phone}[`]);
-  await addConsoleLog(user.id, sessionId, 'info', [`[PAIRING] Code received: ${pairingCode}[`]);
+  await addConsoleLog(user.id, sessionId, 'info', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Pairing code requested from VPS for ${phone}`);
+  await addConsoleLog(user.id, sessionId, 'info', `[PAIRING] Code received: ${pairingCode}`);
 
   req.log.info({ userId: user.id, sessionId, phone }, 'VPS pairing session created');
 
@@ -222,7 +222,7 @@ router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => 
 
   if (session) {
     try {
-      await botRequest([`/session/clear?phone=${encodeURIComponent(session.phoneNumber)}[`], { method: 'POST' });
+      await botRequest(`/session/clear?phone=${encodeURIComponent(session.phoneNumber)}`, { method: 'POST' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to reach the VPS bot';
       res.status(502).json({ error: message });
@@ -234,7 +234,7 @@ router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => 
       .set({ connected: false, connectedAt: null })
       .where(eq(pairingSessionsTable.sessionId, session.sessionId));
 
-    await addConsoleLog(user.id, session.sessionId, 'warn', [`[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}[`]);
+    await addConsoleLog(user.id, session.sessionId, 'warn', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`);
     await addConsoleLog(user.id, session.sessionId, 'info', '[SYSTEM] Session terminated.');
   }
 
