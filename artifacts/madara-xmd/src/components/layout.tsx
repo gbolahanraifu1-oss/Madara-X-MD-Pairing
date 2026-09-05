@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { getGetMeQueryKey, useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const logout = useLogout();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
+  useEffect(() => {
+    const selector = 'script[data-madara-adsense="true"]';
+    document.querySelector(selector)?.remove();
+
+    if (location !== "/") return;
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934268333067094";
+    script.crossOrigin = "anonymous";
+    script.dataset.madaraAdsense = "true";
+    document.head.appendChild(script);
+
+    return () => {
+      document.querySelector(selector)?.remove();
+    };
+  }, [location]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
