@@ -11,13 +11,20 @@ import {
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const usesSupabase = /supabase\.(co|com)/i.test(databaseUrl);
+
+export const pool = new Pool({
+  connectionString: databaseUrl,
+  ...(usesSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+});
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
