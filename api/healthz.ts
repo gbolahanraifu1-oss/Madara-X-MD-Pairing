@@ -4,8 +4,15 @@ type NodeResponse = {
   end: (body: string) => void;
 };
 
+function hasDatabaseConfigured(): boolean {
+  const runtime = globalThis as unknown as {
+    process?: { env?: Record<string, string | undefined> };
+  };
+  return Boolean(runtime.process?.env?.DATABASE_URL);
+}
+
 export default function handler(_req: unknown, res: NodeResponse) {
-  const databaseConfigured = Boolean(process.env.DATABASE_URL);
+  const databaseConfigured = hasDatabaseConfigured();
   res.statusCode = databaseConfigured ? 200 : 503;
   res.setHeader("content-type", "application/json");
   res.end(
