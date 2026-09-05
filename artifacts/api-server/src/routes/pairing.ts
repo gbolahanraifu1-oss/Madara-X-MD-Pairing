@@ -10,14 +10,24 @@ function generateSessionId(): string {
   return crypto.randomBytes(16).toString("hex");
 }
 
+
+async function addConsoleLog(
+  userId: number,
+  sessionId: string | null,
+  level: string,
+  message: string
+) {
+  await db.insert(consoleLogsTable).values({ userId, sessionId, level, message });
+}
+
 const BOT_URL = (process.env.BOT_URL || '').trim().replace(/\/+$/, '');
 
-async function botRequest(path: string, init: RequestInit = {}): Promise<any> {
+async function botRequest(path: string, init: any = {}): Promise<any> {
   if (!BOT_URL) {
     throw new Error('BOT_URL is not configured on the web API');
   }
 
-  const response = await fetch(`${BOT_URL}${path}`, {
+  const response: any = await fetch(`${BOT_URL}${path}`, {
     ...init,
     headers: {
       accept: 'application/json',
