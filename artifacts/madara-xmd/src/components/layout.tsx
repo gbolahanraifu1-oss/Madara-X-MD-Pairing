@@ -105,7 +105,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </span>
                     <Button variant="outline" size="sm" onClick={handleLogout} className="font-mono gap-2 border-primary/20 hover:border-primary/50">
                       <LogOut className="h-4 w-4" />
-                      Exit
+                      Log out
                     </Button>
                   </div>
                 ) : (
