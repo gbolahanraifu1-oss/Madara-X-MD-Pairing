@@ -21,10 +21,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   useEffect(() => {
-    const selector = 'script[data-madara-adsense="true"]';
-    document.querySelector(selector)?.remove();
+    const adScripts = () => document.querySelectorAll('script[src*="adsbygoogle.js"]');
 
-    if (location !== "/") return;
+    if (location !== "/") {
+      adScripts().forEach((script) => script.remove());
+      return;
+    }
+
+    if (adScripts().length > 0) return;
 
     const script = document.createElement("script");
     script.async = true;
@@ -34,7 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     document.head.appendChild(script);
 
     return () => {
-      document.querySelector(selector)?.remove();
+      document.querySelector('script[data-madara-adsense="true"]')?.remove();
     };
   }, [location]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
