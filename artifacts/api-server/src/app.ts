@@ -32,4 +32,20 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+app.use((error: unknown, _req: any, res: any, _next: any) => {
+  logger.error(
+    {
+      err:
+        error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : error,
+    },
+    "Unhandled API error",
+  );
+
+  if (!res.headersSent) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default app;
