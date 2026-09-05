@@ -28,10 +28,8 @@ import {
 } from "@/components/ui/card";
 import {
   Smartphone,
-  QrCode,
   PowerOff,
   Loader2,
-  Link2,
   ShieldCheck,
   Eye,
   Zap,
@@ -42,14 +40,14 @@ const pairingSchema = z.object({
   phoneNumber: z
     .string()
     .min(10, "Valid phone number required with country code"),
-  method: z.enum(["qr", "code"]),
+  method: z.literal("code"),
 });
 
 type PairingFormValues = z.infer<typeof pairingSchema>;
 
 export function Dashboard() {
   const queryClient = useQueryClient();
-  const { data: status, isLoading: isStatusLoading } = useGetPairingStatus({
+  const { data: status } = useGetPairingStatus({
     query: {
       refetchInterval: 3000,
       queryKey: getGetPairingStatusQueryKey(),
@@ -59,7 +57,7 @@ export function Dashboard() {
   const requestPairing = useRequestPairing();
   const disconnectBot = useDisconnectBot();
   const [activeRequest, setActiveRequest] = useState<{
-    type: "qr" | "code";
+    type: "code";
     data: string;
   } | null>(null);
   const [uptime, setUptime] = useState<number>(0);
@@ -99,8 +97,6 @@ export function Dashboard() {
         onSuccess: (res) => {
           if (data.method === "code" && res.pairingCode) {
             setActiveRequest({ type: "code", data: res.pairingCode });
-          } else if (data.method === "qr" && res.qrData) {
-            setActiveRequest({ type: "qr", data: res.qrData });
           }
         },
       },
@@ -117,15 +113,6 @@ export function Dashboard() {
       },
     });
   };
-
-  if (isStatusLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center relative">
-        <div className="fixed inset-0 z-[-2] bg-background" />
-        <Loader2 className="h-8 w-8 text-primary animate-spin relative z-10" />
-      </div>
-    );
-  }
 
   const isConnected = status?.connected;
 
@@ -270,47 +257,16 @@ export function Dashboard() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-mono text-xs uppercase tracking-wider">
-                          Pairing Method
-                        </FormLabel>
-                        <div className="flex gap-4">
-                          <button
-                            type="button"
-                            onClick={() => field.onChange("code")}
-                            className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                              field.value === "code"
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border/50 bg-background/80 text-muted-foreground hover:border-primary/50"
-                            }`}
-                          >
-                            <Link2 className="h-6 w-6 mb-2" />
-                            <span className="font-mono text-sm font-bold tracking-widest uppercase">
-                              8-Digit
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => field.onChange("qr")}
-                            className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                              field.value === "qr"
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border/50 bg-background/80 text-muted-foreground hover:border-primary/50"
-                            }`}
-                          >
-                            <QrCode className="h-6 w-6 mb-2" />
-                            <span className="font-mono text-sm font-bold tracking-widest uppercase">
-                              QR Scan
-                            </span>
-                          </button>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      Pairing Method
+                    </p>
+                    <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/10 p-4 text-primary">
+                      <span className="font-mono text-sm font-bold tracking-widest uppercase">
+                        8-Digit Pairing Code
+                      </span>
+                    </div>
+                  </div>
 
                   <Button
                     type="submit"
@@ -368,37 +324,17 @@ export function Dashboard() {
                   exit={{ opacity: 0, y: -20 }}
                   className="w-full h-full flex flex-col items-center justify-center space-y-6"
                 >
-                  {activeRequest.type === "code" ? (
-                    <div className="text-center w-full">
-                      <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
-                        Pairing Code
-                      </p>
-                      <div className="bg-background border border-primary/30 py-6 rounded-xl font-mono text-5xl font-black tracking-[0.5em] text-primary shadow-inner">
-                        {activeRequest.data}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-4 font-mono">
-                        Enter this code in your WhatsApp linked devices screen.
-                      </p>
+                  <div className="text-center w-full">
+                    <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
+                      Pairing Code
+                    </p>
+                    <div className="bg-background border border-primary/30 py-6 rounded-xl font-mono text-5xl font-black tracking-[0.5em] text-primary shadow-inner">
+                      {activeRequest.data}
                     </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
-                        Scan QR Code
-                      </p>
-                      <div className="p-4 bg-white rounded-xl border border-border inline-block relative group overflow-hidden">
-                        <div className="w-48 h-48 border-4 border-dashed border-primary flex items-center justify-center relative bg-black/5">
-                          <QrCode className="w-32 h-32 text-primary opacity-80" />
-                          <div className="absolute top-0 w-full h-2 bg-primary/50 blur-[2px] animate-scan" />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-4 font-mono">
-                        Open WhatsApp &gt; Linked Devices &gt; Scan QR.
-                      </p>
-                      <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono break-all max-w-[250px] truncate mx-auto">
-                        Raw data: {activeRequest.data}
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-xs text-muted-foreground mt-4 font-mono">
+                      Enter this code in your WhatsApp linked devices screen.
+                    </p>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
