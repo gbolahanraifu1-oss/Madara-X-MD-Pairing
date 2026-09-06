@@ -118,14 +118,6 @@ export function Home() {
         </div>
       </section>
 
-      {/* Ad Banner Placeholder 1 */}
-      <div className="w-full max-w-4xl mx-auto px-4 mb-16">
-        <div className="w-full h-24 md:h-32 rounded-lg border border-border/50 bg-muted/30 flex items-center justify-center overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-          <span className="text-xs tracking-widest text-muted-foreground uppercase font-mono">Advertisement</span>
-        </div>
-      </div>
-
       {/* Stats Section */}
       <section className="w-full bg-muted/20 border-y border-border/40 py-16">
         <div className="container px-4 md:px-6 mx-auto">
