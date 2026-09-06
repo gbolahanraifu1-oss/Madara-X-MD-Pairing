@@ -354,14 +354,6 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <div className="w-full mt-8 relative z-10">
-        <div className="w-full h-24 rounded-lg border border-border/50 bg-muted/40 backdrop-blur-sm flex items-center justify-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-          <span className="text-xs tracking-widest text-muted-foreground uppercase font-mono">
-            Advertisement Space
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
