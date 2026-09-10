@@ -7,6 +7,14 @@ import { getAuthToken } from './lib/auth-token';
 
 import './index.css';
 
+
+const monetagMeta = document.createElement("meta");
+monetagMeta.name = "monetag";
+monetagMeta.content = "48ec74128d80b5da8b5a4e495c060660";
+if (!document.head.querySelector('meta[name="monetag"]')) {
+  document.head.appendChild(monetagMeta);
+}
+
 type ErrorBoundaryProps = { children: ReactNode };
 type ErrorBoundaryState = { error: Error | null };
 
