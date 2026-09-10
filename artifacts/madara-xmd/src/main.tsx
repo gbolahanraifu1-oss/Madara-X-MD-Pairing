@@ -84,7 +84,7 @@ class AppErrorBoundary extends Component<
 // AdSense is enabled only for the public homepage. Private app screens are
 // operational interfaces and must not load Google-served ads.
 if (window.location.pathname !== "/") {
-  document.querySelectorAll('script[src*="adsbygoogle.js"]').forEach((script) => script.remove());
+  document.querySelectorAll('script[src*="adsbygoogle.js"], script[src*="quge5.com/88/tag.min.js"]').forEach((script) => script.remove());
 }
 
 const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
