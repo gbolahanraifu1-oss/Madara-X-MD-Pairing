@@ -12,4 +12,6 @@ export interface PairingRequest {
   phoneNumber: string;
   /** Pairing method - QR scan or pairing code */
   method: PairingRequestMethod;
+  /** Pairing code mode; defaults to normal when omitted */
+  pairingMode?: 'normal' | 'custom';
 }

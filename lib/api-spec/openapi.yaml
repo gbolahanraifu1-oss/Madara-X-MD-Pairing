@@ -420,6 +420,11 @@ components:
           type: string
           enum: [qr, code]
           description: Pairing method - QR scan or pairing code
+        pairingMode:
+          type: string
+          enum: [normal, custom]
+          default: normal
+          description: Pairing code mode used when method=code
       required:
         - phoneNumber
         - method

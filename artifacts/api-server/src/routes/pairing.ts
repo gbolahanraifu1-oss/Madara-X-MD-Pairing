@@ -91,7 +91,8 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     return;
   }
 
-  const { phoneNumber, method } = req.body;
+  const { phoneNumber, method, pairingMode = 'normal' } = req.body;
+  const mode = String(pairingMode || 'normal').toLowerCase();
   const phone = String(phoneNumber || '').replace(/[^0-9]/g, '');
 
   if (!phone || !method) {
@@ -105,13 +106,18 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
   }
 
   if (method !== 'code') {
-    res.status(400).json({ error: 'This VPS bot currently supports 8-digit pairing code only' });
+    res.status(400).json({ error: 'This VPS bot currently supports pairing codes only' });
+    return;
+  }
+
+  if (!['normal', 'custom'].includes(mode)) {
+    res.status(400).json({ error: 'Pairing mode must be normal or custom' });
     return;
   }
 
   let botPair: any;
   try {
-    botPair = await botRequest(`/pair?phone=${encodeURIComponent(phone)}`);
+    botPair = await botRequest(`/pair?phone=${encodeURIComponent(phone)}&mode=${encodeURIComponent(mode)}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The VPS bot could not create a pairing code';
     res.status(502).json({ error: message });
@@ -143,7 +149,7 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     expiresAt,
   });
 
-  await addConsoleLog(user.id, sessionId, 'info', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Pairing code requested from VPS for ${phone}`);
+  await addConsoleLog(user.id, sessionId, 'info', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] ${mode} pairing code requested from VPS for ${phone}`);
   await addConsoleLog(user.id, sessionId, 'info', `[PAIRING] Code received: ${pairingCode}`);
 
   req.log.info({ userId: user.id, sessionId, phone }, 'VPS pairing session created');
