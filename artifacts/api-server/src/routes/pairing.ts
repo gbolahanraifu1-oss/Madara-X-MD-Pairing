@@ -91,8 +91,8 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     return;
   }
 
-  const { phoneNumber, method, pairingMode = 'normal' } = req.body;
-  const mode = String(pairingMode || 'normal').toLowerCase();
+  const { phoneNumber, method, pairingMode = 'custom' } = req.body;
+  const mode = String(pairingMode || 'custom').toLowerCase();
   const phone = String(phoneNumber || '').replace(/[^0-9]/g, '');
 
   if (!phone || !method) {
@@ -238,7 +238,10 @@ router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => 
 
   if (session) {
     try {
-      await botRequest(`/session/clear?phone=${encodeURIComponent(session.phoneNumber)}`, { method: 'POST' });
+      await botRequest('/session/clear', {
+        method: 'POST',
+        body: JSON.stringify({ phone: session.phoneNumber }),
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to reach the VPS bot';
       res.status(502).json({ error: message });
