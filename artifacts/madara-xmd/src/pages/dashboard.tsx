@@ -33,6 +33,8 @@ import {
   ShieldCheck,
   Eye,
   Zap,
+  Copy,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -62,6 +64,7 @@ export function Dashboard() {
     data: string;
   } | null>(null);
   const [uptime, setUptime] = useState<number>(0);
+  const [copied, setCopied] = useState(false);
 
   const form = useForm<PairingFormValues>({
     resolver: zodResolver(pairingSchema),
@@ -89,6 +92,13 @@ export function Dashboard() {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const handleCopy = () => {
+    if (!activeRequest) return;
+    navigator.clipboard.writeText(activeRequest.data);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const onSubmit = (data: PairingFormValues) => {
@@ -322,19 +332,40 @@ export function Dashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="w-full h-full flex flex-col items-center justify-center space-y-6"
+                  className="w-full flex flex-col items-center justify-center space-y-4"
                 >
-                  <div className="text-center w-full">
-                    <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
-                      Custom Pairing Code
-                    </p>
-                    <div className="bg-background border border-primary/30 py-6 rounded-xl font-mono text-5xl font-black tracking-[0.5em] text-primary shadow-inner">
-                      {activeRequest.data}
+                  <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
+                    Custom Pairing Code
+                  </p>
+
+                  {/* ── Clean code display ── */}
+                  <div className="w-full rounded-xl border border-primary/30 bg-background overflow-hidden">
+                    {/* toolbar row */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-muted/20">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        WhatsApp Link Code
+                      </span>
+                      <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-1 rounded border border-border/60 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        {copied
+                          ? <><Check className="h-3 w-3 text-primary" /> Copied</>
+                          : <><Copy className="h-3 w-3" /> Copy</>
+                        }
+                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-4 font-mono">
-                      Enter this code in your WhatsApp linked devices screen.
-                    </p>
+                    {/* code row */}
+                    <div className="flex items-center justify-center px-6 py-5">
+                      <span className="font-mono text-2xl font-bold tracking-[0.3em] text-primary select-all">
+                        {activeRequest.data}
+                      </span>
+                    </div>
                   </div>
+
+                  <p className="text-xs text-muted-foreground font-mono text-center">
+                    Enter this code in WhatsApp → Linked Devices → Link a Device.
+                  </p>
                 </motion.div>
               ) : (
                 <motion.div
