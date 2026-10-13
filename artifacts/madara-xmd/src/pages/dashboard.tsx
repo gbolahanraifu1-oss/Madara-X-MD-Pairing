@@ -41,7 +41,7 @@ const pairingSchema = z.object({
     .string()
     .min(10, "Valid phone number required with country code"),
   method: z.literal("code"),
-  pairingMode: z.enum(["normal", "custom"]),
+  pairingMode: z.literal("custom"),
 });
 
 type PairingFormValues = z.infer<typeof pairingSchema>;
@@ -59,7 +59,6 @@ export function Dashboard() {
   const disconnectBot = useDisconnectBot();
   const [activeRequest, setActiveRequest] = useState<{
     type: "code";
-    mode: "normal" | "custom";
     data: string;
   } | null>(null);
   const [uptime, setUptime] = useState<number>(0);
@@ -69,11 +68,9 @@ export function Dashboard() {
     defaultValues: {
       phoneNumber: "",
       method: "code",
-      pairingMode: "normal",
+      pairingMode: "custom",
     },
   });
-
-  const pairingMode = form.watch("pairingMode");
 
   // Uptime counter
   useEffect(() => {
@@ -97,11 +94,11 @@ export function Dashboard() {
   const onSubmit = (data: PairingFormValues) => {
     setActiveRequest(null);
     requestPairing.mutate(
-      { data: { phoneNumber: data.phoneNumber, method: data.method, pairingMode: data.pairingMode } },
+      { data: { phoneNumber: data.phoneNumber, method: data.method, pairingMode: "custom" } },
       {
         onSuccess: (res) => {
           if (data.method === "code" && res.pairingCode) {
-            setActiveRequest({ type: "code", mode: data.pairingMode, data: res.pairingCode });
+            setActiveRequest({ type: "code", data: res.pairingCode });
           }
         },
       },
@@ -262,34 +259,13 @@ export function Dashboard() {
                     )}
                   />
 
-                  <div className="space-y-2">
-                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                      Pairing Method
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="font-mono text-sm font-bold tracking-widest uppercase text-primary">
+                      Custom Pairing Code
                     </p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        aria-pressed={pairingMode === "normal"}
-                        onClick={() => form.setValue("pairingMode", "normal", { shouldValidate: true })}
-                        className={`rounded-xl border-2 p-4 text-left transition-colors ${pairingMode === "normal" ? "border-primary bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground hover:border-primary/60"}`}
-                      >
-                        <span className="block font-mono text-sm font-bold tracking-widest uppercase">
-                          Normal Pairing Code
-                        </span>
-                        <span className="mt-1 block text-xs opacity-80">WhatsApp generates the code.</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={pairingMode === "custom"}
-                        onClick={() => form.setValue("pairingMode", "custom", { shouldValidate: true })}
-                        className={`rounded-xl border-2 p-4 text-left transition-colors ${pairingMode === "custom" ? "border-primary bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground hover:border-primary/60"}`}
-                      >
-                        <span className="block font-mono text-sm font-bold tracking-widest uppercase">
-                          Custom Pairing Code
-                        </span>
-                        <span className="mt-1 block text-xs opacity-80">Uses the bot's configured 8-character code.</span>
-                      </button>
-                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Uses the bot&apos;s configured pairing code automatically.
+                    </p>
                   </div>
 
                   <Button
@@ -350,7 +326,7 @@ export function Dashboard() {
                 >
                   <div className="text-center w-full">
                     <p className="text-muted-foreground font-mono text-sm mb-4 uppercase tracking-widest">
-                      {activeRequest.mode === "custom" ? "Custom Pairing Code" : "Normal Pairing Code"}
+                      Custom Pairing Code
                     </p>
                     <div className="bg-background border border-primary/30 py-6 rounded-xl font-mono text-5xl font-black tracking-[0.5em] text-primary shadow-inner">
                       {activeRequest.data}
