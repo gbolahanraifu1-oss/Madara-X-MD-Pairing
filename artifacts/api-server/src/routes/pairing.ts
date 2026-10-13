@@ -110,8 +110,8 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     return;
   }
 
-  if (!['normal', 'custom'].includes(mode)) {
-    res.status(400).json({ error: 'Pairing mode must be normal or custom' });
+  if (mode !== 'custom') {
+    res.status(400).json({ error: 'This VPS bot supports custom pairing only' });
     return;
   }
 
