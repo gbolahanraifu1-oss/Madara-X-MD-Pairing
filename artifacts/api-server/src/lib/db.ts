@@ -11,7 +11,7 @@ import {
 
 const { Pool } = pg;
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.NEON_DATABASE_URL ?? process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
