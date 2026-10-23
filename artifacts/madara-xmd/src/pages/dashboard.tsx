@@ -49,10 +49,14 @@ type PairingFormValues = z.infer<typeof pairingSchema>;
 export function Dashboard() {
   const queryClient = useQueryClient();
   const { data: status } = useGetPairingStatus({
-    query: {
-      refetchInterval: 3000,
-      queryKey: getGetPairingStatusQueryKey(),
-    },
+  query: {
+    refetchInterval: 15000,
+    refetchIntervalInBackground: true,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
+    queryKey: getGetPairingStatusQueryKey(),
+  },
   });
 
   const requestPairing = useRequestPairing();
