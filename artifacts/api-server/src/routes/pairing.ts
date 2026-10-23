@@ -54,25 +54,31 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
   const botStatus = await botRequest(`/status?phone=${encodeURIComponent(session.phoneNumber)}`);
   const connected = Boolean(botStatus.connected);
 
-  if (connected === session.connected) return session;
+  const now = new Date();
+  const statusChanged = connected !== session.connected;
 
   await db
     .update(pairingSessionsTable)
     .set({
       connected,
-      connectedAt: connected ? new Date() : null,
-      lastSeen: connected ? new Date() : session.lastSeen,
+      connectedAt: connected
+        ? (session.connectedAt ?? now)
+        : null,
+      lastSeen: connected ? now : session.lastSeen,
+      updatedAt: now,
     })
     .where(eq(pairingSessionsTable.sessionId, session.sessionId));
 
-  await addConsoleLog(
-    session.userId,
-    session.sessionId,
-    connected ? 'success' : 'warn',
-    connected
-      ? `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`
-      : `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
-  );
+  if (statusChanged) {
+    await addConsoleLog(
+      session.userId,
+      session.sessionId,
+      connected ? 'success' : 'warn',
+      connected
+        ? `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`
+        : `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
+    );
+  }
 
   const [updatedSession] = await db
     .select()
