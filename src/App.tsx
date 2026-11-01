@@ -70,7 +70,9 @@ function App() {
           {!introDone && <MadaraIntro onDone={() => setIntroDone(true)} />}
           <div
             className={
-              introDone ? "contents" : "invisible h-0 overflow-hidden pointer-events-none"
+              introDone
+                ? "contents"
+                : "invisible h-0 overflow-hidden pointer-events-none"
             }
           >
             <Router />
