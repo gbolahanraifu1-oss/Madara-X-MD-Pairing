@@ -145,13 +145,13 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* Infinite Tsukuyomi Red Moon Image */}
+      {/* Infinite Tsukuyomi Red Moon Image (Clean, No Border) */}
       {(phase === "tsukuyomi" || phase === "tap1") && (
         <div className="absolute top-[10%] z-0 flex items-center justify-center">
           <img
             src={`${import.meta.env.BASE_URL}redmoon.jpg`}
             alt="Infinite Tsukuyomi Moon"
-            className="w-48 h-48 md:w-64 md:h-64 rounded-full object-cover border border-red-500/40"
+            className="w-48 h-48 md:w-64 md:h-64 rounded-full object-cover"
             style={{ animation: "moonPulse 4s ease-in-out infinite" }}
             draggable={false}
           />
