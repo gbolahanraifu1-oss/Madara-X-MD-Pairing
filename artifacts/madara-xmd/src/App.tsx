@@ -1,19 +1,20 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
-import { useGetMe } from '@workspace/api-client-react';
-import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
-import { ThemeProvider } from '@/components/theme-provider';
-import { Layout } from '@/components/layout';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Switch, Router as WouterRouter, useLocation } from "wouter";
+import { useGetMe } from "@workspace/api-client-react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Layout } from "@/components/layout";
+import { MadaraIntro, shouldPlayIntro } from "@/components/madara-intro";
 
-import { Home } from '@/pages/home';
-import { Login } from '@/pages/login';
-import { Register } from '@/pages/register';
-import { Dashboard } from '@/pages/dashboard';
-import { Console } from '@/pages/console';
-import { Contact } from '@/pages/contact';
-import { ForgotPassword } from '@/pages/forgot-password';
-import NotFound from '@/pages/not-found';
+import { Home } from "@/pages/home";
+import { Login } from "@/pages/login";
+import { Register } from "@/pages/register";
+import { Dashboard } from "@/pages/dashboard";
+import { Console } from "@/pages/console";
+import { Contact } from "@/pages/contact";
+import { ForgotPassword } from "@/pages/forgot-password";
+import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +24,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   useEffect(() => {
     if (!isLoading && !user) {
-      setLocation('/login');
+      setLocation("/login");
     }
   }, [user, isLoading, setLocation]);
 
@@ -46,8 +47,12 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/dashboard"><ProtectedRoute component={Dashboard} /></Route>
-        <Route path="/console"><ProtectedRoute component={Console} /></Route>
+        <Route path="/dashboard">
+          <ProtectedRoute component={Dashboard} />
+        </Route>
+        <Route path="/console">
+          <ProtectedRoute component={Console} />
+        </Route>
         <Route path="/contact" component={Contact} />
         <Route component={NotFound} />
       </Switch>
@@ -56,11 +61,22 @@ function Router() {
 }
 
 function App() {
+  const [introDone, setIntroDone] = useState(() => !shouldPlayIntro());
+
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          {!introDone && <MadaraIntro onDone={() => setIntroDone(true)} />}
+          <div
+            className={
+              introDone
+                ? "contents"
+                : "invisible h-0 overflow-hidden pointer-events-none"
+            }
+          >
+            <Router />
+          </div>
         </WouterRouter>
       </QueryClientProvider>
     </ThemeProvider>
