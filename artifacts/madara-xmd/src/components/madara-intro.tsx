@@ -36,7 +36,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
       const v = videoRef.current;
       if (v) {
         v.currentTime = 0;
-        v.muted = true;
+        v.muted = false;
         v.play().catch(() => {});
       }
       // Show skip prompt early — don't wait full 15s
@@ -148,7 +148,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
             ref={videoRef}
             src={`${import.meta.env.BASE_URL}susanoo.mp4`}
             className="w-full max-h-[55vh] object-contain drop-shadow-[0_0_50px_#ff2222aa]"
-            muted
+            
             playsInline
             loop
             autoPlay
