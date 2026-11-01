@@ -101,8 +101,12 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
           to { transform: rotate(360deg); }
         }
         @keyframes moonPulse {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 40px rgba(255,0,0,0.6)); }
-          50% { transform: scale(1.02); filter: drop-shadow(0 0 70px rgba(255,0,0,0.9)); }
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 60px rgba(255,20,20,0.8)); }
+          50% { transform: scale(1.03); filter: drop-shadow(0 0 90px rgba(255,0,0,1)); }
+        }
+        @keyframes tomoeSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         @keyframes ashDrift {
           0% { transform: translateY(0px) translateX(0px); opacity: 0; }
@@ -117,7 +121,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         className={
           "absolute inset-0 transition-all duration-1000 " +
           (phase === "tsukuyomi" || phase === "tap1"
-            ? "opacity-100 bg-[radial-gradient(circle_at_center,#5c0000_0%,#140000_60%,#000_100%)]"
+            ? "opacity-100 bg-[radial-gradient(circle_at_center,#6b0000_0%,#1a0000_55%,#000_100%)]"
             : phase === "susanoo" || phase === "tap2" || phase === "exit"
               ? "opacity-100 bg-black"
               : "opacity-95 bg-black")
@@ -127,7 +131,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
       {/* Ash Particles */}
       {(phase === "tsukuyomi" || phase === "tap1" || showSusanoo) && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {[...Array(12)].map((_, i) => (
+          {[...Array(14)].map((_, i) => (
             <span
               key={i}
               className="absolute bg-red-500 rounded-full blur-[1px]"
@@ -145,22 +149,41 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* Accurate Rinne-Sharingan Blood Moon */}
+      {/* Realistic Infinite Tsukuyomi Blood Moon with Tomoe Overlay */}
       {(phase === "tsukuyomi" || phase === "tap1") && (
-        <div className="absolute top-[12%] flex flex-col items-center justify-center pointer-events-none z-0">
+        <div className="absolute top-[8%] flex items-center justify-center pointer-events-none z-0">
           <div
-            className="relative w-44 h-44 md:w-56 md:h-56 rounded-full bg-gradient-to-tr from-[#3a0000] via-[#8B0000] to-[#ff1a1a] flex items-center justify-center border-2 border-red-600/60"
+            className="relative w-52 h-52 md:w-68 md:h-68 rounded-full overflow-hidden border border-red-500/40"
             style={{ animation: "moonPulse 4s ease-in-out infinite" }}
           >
-            {/* Rinnegan Ripple Circles */}
-            <div className="absolute inset-2 rounded-full border border-black/50 flex items-center justify-center">
-              <div className="absolute inset-3 rounded-full border border-black/40 flex items-center justify-center">
-                <div className="absolute inset-4 rounded-full border border-black/40 flex items-center justify-center">
-                  <div className="absolute inset-4 rounded-full border border-black/60 flex items-center justify-center">
-                    {/* Inner core tomoe dots */}
-                    <div className="w-3 h-3 bg-black rounded-full shadow-[0_0_8px_#ff0000]" />
-                  </div>
-                </div>
+            {/* Realistic Red Moon Texture Background */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${import.meta.env.BASE_URL}watermarked_img_11926420248946405452.jpg)`,
+                filter: "contrast(1.2) saturate(1.4)"
+              }}
+            />
+            {/* Dark vignette blending for celestial depth */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(40,0,0,0.85)_90%)] mix-blend-multiply" />
+
+            {/* Rinne-Sharingan Tomoe Overlay Rings */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div 
+                className="w-full h-full relative flex items-center justify-center opacity-85"
+                style={{ animation: "tomoeSpin 20s linear infinite" }}
+              >
+                {/* Outer Ripple Ring */}
+                <div className="absolute w-44 h-44 md:w-56 md:h-56 rounded-full border border-black/60" />
+                {/* Middle Ripple Ring */}
+                <div className="absolute w-32 h-32 md:w-40 md:h-40 rounded-full border border-black/70" />
+                {/* Inner Ripple Ring */}
+                <div className="absolute w-20 h-20 md:w-24 md:h-24 rounded-full border border-black/80" />
+                
+                {/* Tomoe Markers (Accurate placement along the rings) */}
+                <div className="absolute top-6 w-3.5 h-3.5 bg-black rounded-full shadow-[0_0_6px_#ff0000]" />
+                <div className="absolute bottom-8 right-12 w-3.5 h-3.5 bg-black rounded-full shadow-[0_0_6px_#ff0000]" />
+                <div className="absolute bottom-8 left-12 w-3.5 h-3.5 bg-black rounded-full shadow-[0_0_6px_#ff0000]" />
               </div>
             </div>
           </div>
@@ -187,17 +210,20 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* Susanoo Video - Fixed to fit screen cleanly without over-zooming */}
+      {/* Susanoo Video - Full Screen Immersive Cover with Loop */}
       {showSusanoo && (
-        <div className="absolute inset-0 z-10 w-full h-full flex flex-col items-center justify-center bg-black px-4">
+        <div className="absolute inset-0 z-10 w-full h-full overflow-hidden bg-black flex items-center justify-center">
           <video
             ref={videoRef}
             src={`${import.meta.env.BASE_URL}susanoo.mp4`}
-            className="w-full max-w-2xl max-h-[65vh] object-contain drop-shadow-[0_0_30px_#ff1a1a55]"
+            className="absolute inset-0 w-full h-full object-cover scale-105"
             playsInline
             autoPlay
+            loop
           />
-          <div className="mt-4 font-mono text-red-400 tracking-[0.3em] text-xs md:text-sm uppercase">
+          {/* Cinematic lighting vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/50 pointer-events-none" />
+          <div className="absolute bottom-24 left-0 right-0 text-center z-20 font-mono text-red-400 tracking-[0.3em] text-xs md:text-sm uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             Susanoo · Manifesting
           </div>
         </div>
@@ -222,7 +248,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         )}
         {(phase === "susanoo" || phase === "tap2") && (
           <p
-            className="font-mono text-red-200 text-sm md:text-base tracking-[0.35em] uppercase"
+            className="font-mono text-red-200 text-sm md:text-base tracking-[0.35em] uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
             style={{ animation: "madaraBlink 1.1s ease-in-out infinite" }}
           >
             TAP TO SKIP
