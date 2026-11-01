@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { TsukuyomiMoon } from "./TsukuyomiMoon"; // Adjust path if needed
 
 type Phase =
   | "sharingan"
@@ -101,6 +100,10 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes moonPulse {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 50px rgba(255,0,0,0.8)); }
+          50% { transform: scale(1.04); filter: drop-shadow(0 0 90px rgba(255,0,0,1)); }
+        }
         @keyframes ashDrift {
           0% { transform: translateY(0px) translateX(0px); opacity: 0; }
           20% { opacity: 0.7; }
@@ -142,10 +145,16 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* Render the Imported Tsukuyomi Moon Component */}
+      {/* Infinite Tsukuyomi Red Moon Image */}
       {(phase === "tsukuyomi" || phase === "tap1") && (
-        <div className="absolute top-[10%] z-0">
-          <TsukuyomiMoon />
+        <div className="absolute top-[10%] z-0 flex items-center justify-center">
+          <img
+            src={`${import.meta.env.BASE_URL}redmoon.jpg`}
+            alt="Infinite Tsukuyomi Moon"
+            className="w-48 h-48 md:w-64 md:h-64 rounded-full object-cover border border-red-500/40"
+            style={{ animation: "moonPulse 4s ease-in-out infinite" }}
+            draggable={false}
+          />
         </div>
       )}
 
