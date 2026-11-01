@@ -150,7 +150,7 @@ export function MadaraIntro({ onDone }: { onDone: () => void }) {
             className="w-full max-h-[55vh] object-contain drop-shadow-[0_0_50px_#ff2222aa]"
             
             playsInline
-            loop
+            
             autoPlay
           />
           <div className="mt-4 font-mono text-red-400 tracking-[0.3em] text-xs md:text-sm uppercase">
