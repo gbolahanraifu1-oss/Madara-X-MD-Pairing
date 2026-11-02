@@ -52,6 +52,17 @@ function apiBase() {
   return (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 }
 
+function formatUptime(seconds: number) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const hh = String(h).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return hh + ":" + mm + ":" + ss;
+}
+
 export function Dashboard() {
   const queryClient = useQueryClient();
   const { data: status } = useGetPairingStatus({
@@ -74,7 +85,6 @@ export function Dashboard() {
   const [uptime, setUptime] = useState<number>(0);
   const [copied, setCopied] = useState(false);
 
-  // VPS bot process via pairApi /health — NOT WhatsApp session
   const [vpsOnline, setVpsOnline] = useState<boolean | null>(null);
   const [vpsError, setVpsError] = useState<string | null>(null);
 
@@ -83,7 +93,7 @@ export function Dashboard() {
 
     const checkVps = async () => {
       try {
-        const res = await fetch(`${apiBase()}/api/pairing/server-status`, {
+        const res = await fetch(apiBase() + "/api/pairing/server-status", {
           credentials: "include",
         });
         const data = await res.json().catch(() => ({}));
@@ -125,15 +135,6 @@ export function Dashboard() {
     }
     return;
   }, [status?.connected, status?.uptimeSeconds]);
-
-  const formatUptime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `\( {h.toString().padStart(2, "0")}: \){m
-      .toString()
-      .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
 
   const handleCopy = () => {
     if (!activeRequest) return;
@@ -203,7 +204,6 @@ export function Dashboard() {
         </svg>
       </div>
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/40 border border-border p-6 rounded-2xl backdrop-blur-md">
         <div>
           <h1 className="text-3xl font-bold font-mono tracking-tight">
@@ -257,10 +257,10 @@ export function Dashboard() {
                 }
               >
                 {vpsOnline === null
-                  ? "𝙼𝙰𝙳𝙰𝚁𝙰 …"
+                  ? "MADARA ..."
                   : vpsOnline
-                    ? "𝙼𝙰𝙳𝙰𝚁𝙰 𝙾𝙽𝙻𝙸𝙽𝙴"
-                    : "𝙼𝙰𝙳𝙰𝚁𝙰 𝙾𝙵𝙵𝙻𝙸𝙽𝙴"}
+                    ? "MADARA ONLINE"
+                    : "MADARA OFFLINE"}
               </span>
               {vpsOnline === false && vpsError && (
                 <span className="text-[10px] font-mono text-red-400/90 truncate max-w-[200px]">
@@ -270,7 +270,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* WhatsApp session — existing */}
+          {/* WhatsApp session */}
           <div className="flex items-center gap-4 border border-border/50 bg-background/80 px-4 py-2 rounded-lg">
             <div className="flex flex-col">
               <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
@@ -280,11 +280,12 @@ export function Dashboard() {
                 <motion.div
                   animate={{ opacity: isConnected ? [0.5, 1, 0.5] : 1 }}
                   transition={{ duration: 1.5, repeat: Infinity }}
-                  className={`h-3 w-3 rounded-full ${
-                    isConnected
+                  className={
+                    "h-3 w-3 rounded-full " +
+                    (isConnected
                       ? "bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.8)]"
-                      : "bg-destructive"
-                  }`}
+                      : "bg-destructive")
+                  }
                 />
                 <span className="font-mono font-bold tracking-widest uppercase text-sm">
                   {isConnected ? "Connected" : "Disconnected"}
@@ -307,7 +308,6 @@ export function Dashboard() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 relative z-10">
-        {/* Pairing Panel */}
         <Card className="border-border/50 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="font-mono text-xl">Link Your Device</CardTitle>
@@ -397,7 +397,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Output Panel */}
         <Card className="border-border/50 bg-card/60 backdrop-blur-md overflow-hidden flex flex-col">
           <CardHeader className="bg-background/60 border-b border-border/50 pb-4">
             <CardTitle className="font-mono text-xl flex items-center justify-between">
