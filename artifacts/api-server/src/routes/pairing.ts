@@ -21,12 +21,32 @@ async function addConsoleLog(
 
 const BOT_URL = (process.env.BOT_URL || "").trim().replace(/\/+$/, "");
 
+function normalizeBotUrl(raw: string): string | null {
+  let u = String(raw || "").trim().replace(/\/+$/, "");
+  if (!u) return null;
+  u = u.replace(/^\{+/, "").replace(/\}+\( /, "").replace(/^"+|"+ \)/g, "").trim();
+  if (!/^https?:\/\//i.test(u)) {
+    u = "http://" + u;
+  }
+  try {
+    const parsed = new URL(u);
+    if (!parsed.hostname) return null;
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 async function botRequest(path: string, init: any = {}): Promise<any> {
-  if (!BOT_URL) {
-    throw new Error("BOT_URL is not configured on the web API");
+  const base = normalizeBotUrl(BOT_URL);
+  if (!base) {
+    throw new Error(
+      "BOT_URL is not configured or invalid. Set e.g. https://madaraweb.hidenplay.net",
+    );
   }
 
-  const response: any = await fetch(`\( {BOT_URL} \){path}`, {
+  const target = base + path;
+  const response: any = await fetch(target, {
     ...init,
     headers: {
       accept: "application/json",
@@ -35,6 +55,7 @@ async function botRequest(path: string, init: any = {}): Promise<any> {
     },
     signal: init.signal || AbortSignal.timeout(75_000),
   });
+
   const raw = await response.text();
   let body: any = {};
   try {
@@ -44,14 +65,14 @@ async function botRequest(path: string, init: any = {}): Promise<any> {
   }
 
   if (!response.ok) {
-    throw new Error(body.error || `Bot API returned HTTP ${response.status}`);
+    throw new Error(body.error || "Bot API returned HTTP " + response.status);
   }
   return body;
 }
 
 async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) {
   const botStatus = await botRequest(
-    `/status?phone=${encodeURIComponent(session.phoneNumber)}`,
+    "/status?phone=" + encodeURIComponent(session.phoneNumber),
   );
   const connected = Boolean(botStatus.connected);
 
@@ -74,8 +95,8 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
       session.sessionId,
       connected ? "success" : "warn",
       connected
-        ? `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`
-        : `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
+        ? "[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to " + session.phoneNumber + "!"
+        : "[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from " + session.phoneNumber,
     );
   }
 
@@ -88,13 +109,15 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
   return updatedSession ?? session;
 }
 
-// GET /pairing/server-status — VPS bot process (NOT WhatsApp session)
+// GET /pairing/server-status — VPS process only (pairApi /health)
 router.get("/pairing/server-status", async (_req: any, res: any): Promise<void> => {
-  if (!BOT_URL) {
+  const base = normalizeBotUrl(BOT_URL);
+  if (!base) {
     res.status(200).json({
       online: false,
       reachable: false,
-      error: "BOT_URL is not configured on the web API",
+      error:
+        "BOT_URL missing or invalid. Set e.g. https://madaraweb.hidenplay.net",
     });
     return;
   }
@@ -102,9 +125,11 @@ router.get("/pairing/server-status", async (_req: any, res: any): Promise<void> 
   const paths = ["/health", "/ping", "/"];
   let lastError = "Unable to reach VPS bot";
 
-  for (const path of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
+    const target = base + path;
     try {
-      const response: any = await fetch(`\( {BOT_URL} \){path}`, {
+      const response: any = await fetch(target, {
         headers: { accept: "application/json" },
         signal: AbortSignal.timeout(8_000),
       });
@@ -132,6 +157,7 @@ router.get("/pairing/server-status", async (_req: any, res: any): Promise<void> 
     online: false,
     reachable: false,
     error: lastError,
+    tried: base,
   });
 });
 
@@ -174,7 +200,7 @@ router.post("/pairing/request", async (req: any, res: any): Promise<void> => {
   let botPair: any;
   try {
     botPair = await botRequest(
-      `/pair?phone=\( {encodeURIComponent(phone)}&mode= \){encodeURIComponent(mode)}`,
+      "/pair?phone=" + encodeURIComponent(phone) + "&mode=" + encodeURIComponent(mode),
     );
   } catch (error) {
     const message =
@@ -214,13 +240,13 @@ router.post("/pairing/request", async (req: any, res: any): Promise<void> => {
     user.id,
     sessionId,
     "info",
-    `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] ${mode} pairing code requested from VPS for ${phone}`,
+    "[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] " + mode + " pairing code requested from VPS for " + phone,
   );
   await addConsoleLog(
     user.id,
     sessionId,
     "info",
-    `[PAIRING] Code received: ${pairingCode}`,
+    "[PAIRING] Code received: " + pairingCode,
   );
 
   req.log.info({ userId: user.id, sessionId, phone }, "VPS pairing session created");
@@ -337,7 +363,7 @@ router.post("/pairing/disconnect", async (req: any, res: any): Promise<void> => 
       user.id,
       session.sessionId,
       "warn",
-      `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
+      "[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from " + session.phoneNumber,
     );
     await addConsoleLog(
       user.id,
@@ -355,7 +381,6 @@ router.post("/pairing/disconnect", async (req: any, res: any): Promise<void> => 
 router.get("/pairing/stats", async (_req: any, res: any): Promise<void> => {
   const allSessions = await db.select().from(pairingSessionsTable);
   const activeSessions = allSessions.filter((s) => s.connected);
-
   const uniqueUsers = new Set(allSessions.map((s) => s.userId));
 
   const avgUptime =
