@@ -52,7 +52,7 @@ async function botRequest(path: string, init: any = {}): Promise<any> {
 
 async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) {
   const botStatus = await botRequest(`/status?phone=${encodeURIComponent(session.phoneNumber)}`);
-  const connected = Boolean(botStatus.connected);
+  const connected = Boolean(botStatus.connected ?? botStatus.online ?? botStatus.isConnected);
 
   const now = new Date();
   const statusChanged = connected !== session.connected;
