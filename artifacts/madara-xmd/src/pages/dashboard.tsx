@@ -262,7 +262,7 @@ export function Dashboard() {
                           <div className="relative">
                             <Smartphone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                             <Input
-                              placeholder="e.g. 1234567890"
+                              placeholder="e.g. 234xxxxxxxx"
                               className="pl-10 font-mono bg-background/80"
                               {...field}
                             />
