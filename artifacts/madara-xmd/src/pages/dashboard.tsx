@@ -48,17 +48,21 @@ const pairingSchema = z.object({
 
 type PairingFormValues = z.infer<typeof pairingSchema>;
 
+function apiBase() {
+  return (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+}
+
 export function Dashboard() {
   const queryClient = useQueryClient();
   const { data: status } = useGetPairingStatus({
-  query: {
-    refetchInterval: 15000,
-    refetchIntervalInBackground: true,
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true,
-    retry: 3,
-    queryKey: getGetPairingStatusQueryKey(),
-  },
+    query: {
+      refetchInterval: 15000,
+      refetchIntervalInBackground: true,
+      refetchOnReconnect: true,
+      refetchOnWindowFocus: true,
+      retry: 3,
+      queryKey: getGetPairingStatusQueryKey(),
+    },
   });
 
   const requestPairing = useRequestPairing();
@@ -70,6 +74,38 @@ export function Dashboard() {
   const [uptime, setUptime] = useState<number>(0);
   const [copied, setCopied] = useState(false);
 
+  // VPS bot process via pairApi /health — NOT WhatsApp session
+  const [vpsOnline, setVpsOnline] = useState<boolean | null>(null);
+  const [vpsError, setVpsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    const checkVps = async () => {
+      try {
+        const res = await fetch(`${apiBase()}/api/pairing/server-status`, {
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!alive) return;
+        const online = Boolean(data.online || data.reachable);
+        setVpsOnline(online);
+        setVpsError(online ? null : data.error || "Bot server unreachable");
+      } catch (e) {
+        if (!alive) return;
+        setVpsOnline(false);
+        setVpsError(e instanceof Error ? e.message : "Bot server unreachable");
+      }
+    };
+
+    checkVps();
+    const t = setInterval(checkVps, 15000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
   const form = useForm<PairingFormValues>({
     resolver: zodResolver(pairingSchema),
     defaultValues: {
@@ -79,7 +115,6 @@ export function Dashboard() {
     },
   });
 
-  // Uptime counter
   useEffect(() => {
     if (status?.connected && status?.uptimeSeconds != null) {
       setUptime(status.uptimeSeconds);
@@ -95,7 +130,9 @@ export function Dashboard() {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    return `\( {h.toString().padStart(2, "0")}: \){m
+      .toString()
+      .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
   const handleCopy = () => {
@@ -108,7 +145,13 @@ export function Dashboard() {
   const onSubmit = (data: PairingFormValues) => {
     setActiveRequest(null);
     requestPairing.mutate(
-      { data: { phoneNumber: data.phoneNumber, method: data.method, pairingMode: "custom" } },
+      {
+        data: {
+          phoneNumber: data.phoneNumber,
+          method: data.method,
+          pairingMode: "custom",
+        },
+      },
       {
         onSuccess: (res) => {
           if (data.method === "code" && res.pairingCode) {
@@ -130,46 +173,40 @@ export function Dashboard() {
     });
   };
 
-  const isConnected = status?.connected;
+  const isConnected = Boolean(status?.connected);
 
   return (
     <div className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full space-y-8 relative">
       <div
         className="fixed inset-0 z-[-1] pointer-events-none"
         style={{
-          backgroundImage: 'url(/sharingan.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          backgroundImage: "url(/sharingan.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
           opacity: 0.18,
         }}
       />
       <div className="fixed inset-0 z-[-2] bg-background" />
 
-      {/* Decorative spinning sharingan */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-[0.03] z-[-1] pointer-events-none animate-sharingan text-primary">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="2"/>
-          <circle cx="50" cy="50" r="12" fill="currentColor"/>
-          <g transform="translate(50, 18) scale(0.6)">
-            <circle cx="0" cy="0" r="10" fill="currentColor" />
-            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
-          </g>
-          <g transform="translate(22, 66) scale(0.6) rotate(120)">
-            <circle cx="0" cy="0" r="10" fill="currentColor" />
-            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
-          </g>
-          <g transform="translate(78, 66) scale(0.6) rotate(240)">
-            <circle cx="0" cy="0" r="10" fill="currentColor" />
-            <path d="M 0 -10 A 15 15 0 0 1 15 15 Q 15 20 10 25 A 20 20 0 0 0 0 10 Z" fill="currentColor" />
-          </g>
+          <circle
+            cx="50"
+            cy="50"
+            r="48"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <circle cx="50" cy="50" r="12" fill="currentColor" />
         </svg>
       </div>
 
-      {/* Header & Status */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/40 border border-border p-6 rounded-2xl backdrop-blur-md">
         <div>
-          <h1 className="text-3xl font-bold font-mono tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-bold font-mono tracking-tight">
             Pairing Chamber
           </h1>
           <p className="text-muted-foreground mt-1 text-sm font-mono">
@@ -177,33 +214,95 @@ export function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-4 border border-border/50 bg-background/80 px-4 py-2 rounded-lg">
-          <div className="flex flex-col">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
-              Status
-            </span>
-            <div className="flex items-center gap-2">
-              <motion.div
-                animate={{ opacity: isConnected ? [0.5, 1, 0.5] : 1 }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className={`h-3 w-3 rounded-full ${isConnected ? "bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.8)]" : "bg-destructive"}`}
-              />
-              <span className="font-mono font-bold tracking-widest uppercase text-sm">
-                {isConnected ? "Connected" : "Disconnected"}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* VPS bot process */}
+          <div
+            className={
+              "flex items-center gap-2 border px-4 py-2 rounded-lg min-w-[180px] " +
+              (vpsOnline
+                ? "border-emerald-500/40 bg-emerald-500/10"
+                : vpsOnline === false
+                  ? "border-red-500/40 bg-red-500/10"
+                  : "border-border/50 bg-background/80")
+            }
+          >
+            <motion.div
+              animate={
+                vpsOnline
+                  ? { opacity: [0.4, 1, 0.4], scale: [1, 1.2, 1] }
+                  : { opacity: 1 }
+              }
+              transition={{ duration: 1.4, repeat: Infinity }}
+              className={
+                "h-3 w-3 rounded-full shrink-0 " +
+                (vpsOnline
+                  ? "bg-emerald-400 shadow-[0_0_12px_#34d399,0_0_24px_#34d39988]"
+                  : vpsOnline === false
+                    ? "bg-red-500 shadow-[0_0_8px_#ef4444aa]"
+                    : "bg-muted-foreground/50")
+              }
+            />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-mono font-bold">
+                VPS Bot
               </span>
+              <span
+                className={
+                  "font-mono font-bold tracking-[0.15em] text-sm " +
+                  (vpsOnline
+                    ? "text-emerald-400 drop-shadow-[0_0_8px_#34d399aa]"
+                    : vpsOnline === false
+                      ? "text-red-400 drop-shadow-[0_0_6px_#ef4444aa]"
+                      : "text-muted-foreground")
+                }
+              >
+                {vpsOnline === null
+                  ? "𝙼𝙰𝙳𝙰𝚁𝙰 …"
+                  : vpsOnline
+                    ? "𝙼𝙰𝙳𝙰𝚁𝙰 𝙾𝙽𝙻𝙸𝙽𝙴"
+                    : "𝙼𝙰𝙳𝙰𝚁𝙰 𝙾𝙵𝙵𝙻𝙸𝙽𝙴"}
+              </span>
+              {vpsOnline === false && vpsError && (
+                <span className="text-[10px] font-mono text-red-400/90 truncate max-w-[200px]">
+                  {vpsError}
+                </span>
+              )}
             </div>
           </div>
 
-          {isConnected && (
-            <div className="pl-4 border-l border-border/50 flex flex-col">
+          {/* WhatsApp session — existing */}
+          <div className="flex items-center gap-4 border border-border/50 bg-background/80 px-4 py-2 rounded-lg">
+            <div className="flex flex-col">
               <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
-                Uptime
+                Session
               </span>
-              <span className="font-mono font-bold tracking-widest text-sm text-primary">
-                {formatUptime(uptime)}
-              </span>
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{ opacity: isConnected ? [0.5, 1, 0.5] : 1 }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className={`h-3 w-3 rounded-full ${
+                    isConnected
+                      ? "bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.8)]"
+                      : "bg-destructive"
+                  }`}
+                />
+                <span className="font-mono font-bold tracking-widest uppercase text-sm">
+                  {isConnected ? "Connected" : "Disconnected"}
+                </span>
+              </div>
             </div>
-          )}
+
+            {isConnected && (
+              <div className="pl-4 border-l border-border/50 flex flex-col">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-bold">
+                  Uptime
+                </span>
+                <span className="font-mono font-bold tracking-widest text-sm text-primary">
+                  {formatUptime(uptime)}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -211,9 +310,7 @@ export function Dashboard() {
         {/* Pairing Panel */}
         <Card className="border-border/50 bg-card/60 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="font-mono text-xl">
-              Link Your Device
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Link Your Device</CardTitle>
             <CardDescription className="font-mono">
               Enter details to pair a new device
             </CardDescription>
@@ -227,7 +324,7 @@ export function Dashboard() {
                     Connected
                   </h3>
                   <p className="text-muted-foreground font-mono text-sm max-w-xs">
-                    Paired with: {status.phoneNumber}
+                    Paired with: {status?.phoneNumber}
                   </p>
                 </div>
                 <Button
@@ -323,11 +420,10 @@ export function Dashboard() {
                     <ShieldCheck className="h-10 w-10 text-primary" />
                   </div>
                   <h3 className="font-mono font-bold text-2xl mb-2 text-foreground">
-                    Bot Online
+                    Session Online
                   </h3>
                   <p className="text-muted-foreground text-sm max-w-sm font-mono">
-                    Bot is successfully connected. Go to the console to view
-                    logs.
+                    WhatsApp is linked. Go to the console to view logs.
                   </p>
                 </motion.div>
               ) : activeRequest ? (
@@ -342,24 +438,27 @@ export function Dashboard() {
                     Custom Pairing Code
                   </p>
 
-                  {/* ── Clean code display ── */}
                   <div className="w-full rounded-xl border border-primary/30 bg-background overflow-hidden">
-                    {/* toolbar row */}
                     <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-muted/20">
                       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                         WhatsApp Link Code
                       </span>
                       <button
+                        type="button"
                         onClick={handleCopy}
                         className="flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-1 rounded border border-border/60 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                       >
-                        {copied
-                          ? <><Check className="h-3 w-3 text-primary" /> Copied</>
-                          : <><Copy className="h-3 w-3" /> Copy</>
-                        }
+                        {copied ? (
+                          <>
+                            <Check className="h-3 w-3 text-primary" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" /> Copy
+                          </>
+                        )}
                       </button>
                     </div>
-                    {/* code row */}
                     <div className="flex items-center justify-center px-6 py-5">
                       <span className="font-mono text-2xl font-bold tracking-[0.3em] text-primary select-all">
                         {activeRequest.data}
@@ -368,7 +467,8 @@ export function Dashboard() {
                   </div>
 
                   <p className="text-xs text-muted-foreground font-mono text-center">
-                    Enter this code in WhatsApp → Linked Devices → Link a Device.
+                    Enter this code in WhatsApp → Linked Devices → Link a
+                    Device.
                   </p>
                 </motion.div>
               ) : (
@@ -388,7 +488,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }
