@@ -1,6 +1,6 @@
 import { Router } from "express";
 import crypto from "node:crypto";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, pairingSessionsTable, consoleLogsTable } from "../lib/db.js";
 import { getUserFromRequest } from "./auth.js";
 
@@ -10,28 +10,27 @@ function generateSessionId(): string {
   return crypto.randomBytes(16).toString("hex");
 }
 
-
 async function addConsoleLog(
   userId: number,
   sessionId: string | null,
   level: string,
-  message: string
+  message: string,
 ) {
   await db.insert(consoleLogsTable).values({ userId, sessionId, level, message });
 }
 
-const BOT_URL = (process.env.BOT_URL || '').trim().replace(/\/+$/, '');
+const BOT_URL = (process.env.BOT_URL || "").trim().replace(/\/+$/, "");
 
 async function botRequest(path: string, init: any = {}): Promise<any> {
   if (!BOT_URL) {
-    throw new Error('BOT_URL is not configured on the web API');
+    throw new Error("BOT_URL is not configured on the web API");
   }
 
-  const response: any = await fetch(`${BOT_URL}${path}`, {
+  const response: any = await fetch(`\( {BOT_URL} \){path}`, {
     ...init,
     headers: {
-      accept: 'application/json',
-      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      accept: "application/json",
+      ...(init.body ? { "content-type": "application/json" } : {}),
       ...(init.headers || {}),
     },
     signal: init.signal || AbortSignal.timeout(75_000),
@@ -41,7 +40,7 @@ async function botRequest(path: string, init: any = {}): Promise<any> {
   try {
     body = raw ? JSON.parse(raw) : {};
   } catch {
-    body = { error: raw || 'Bot API returned an invalid response' };
+    body = { error: raw || "Bot API returned an invalid response" };
   }
 
   if (!response.ok) {
@@ -51,7 +50,9 @@ async function botRequest(path: string, init: any = {}): Promise<any> {
 }
 
 async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) {
-  const botStatus = await botRequest(`/status?phone=${encodeURIComponent(session.phoneNumber)}`);
+  const botStatus = await botRequest(
+    `/status?phone=${encodeURIComponent(session.phoneNumber)}`,
+  );
   const connected = Boolean(botStatus.connected);
 
   const now = new Date();
@@ -61,9 +62,7 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
     .update(pairingSessionsTable)
     .set({
       connected,
-      connectedAt: connected
-        ? (session.connectedAt ?? now)
-        : null,
+      connectedAt: connected ? (session.connectedAt ?? now) : null,
       lastSeen: connected ? now : session.lastSeen,
       updatedAt: now,
     })
@@ -73,7 +72,7 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
     await addConsoleLog(
       session.userId,
       session.sessionId,
-      connected ? 'success' : 'warn',
+      connected ? "success" : "warn",
       connected
         ? `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot connected successfully to ${session.phoneNumber}!`
         : `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
@@ -89,50 +88,106 @@ async function syncBotStatus(session: typeof pairingSessionsTable.$inferSelect) 
   return updatedSession ?? session;
 }
 
-// POST /pairing/request
-router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
-  const user = await getUserFromRequest(req);
-  if (!user) {
-    res.status(401).json({ error: 'Not authenticated' });
+// GET /pairing/server-status — VPS bot process (NOT WhatsApp session)
+router.get("/pairing/server-status", async (_req: any, res: any): Promise<void> => {
+  if (!BOT_URL) {
+    res.status(200).json({
+      online: false,
+      reachable: false,
+      error: "BOT_URL is not configured on the web API",
+    });
     return;
   }
 
-  const { phoneNumber, method, pairingMode = 'custom' } = req.body;
-  const mode = String(pairingMode || 'custom').toLowerCase();
-  const phone = String(phoneNumber || '').replace(/[^0-9]/g, '');
+  const paths = ["/health", "/ping", "/"];
+  let lastError = "Unable to reach VPS bot";
+
+  for (const path of paths) {
+    try {
+      const response: any = await fetch(`\( {BOT_URL} \){path}`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (response.status > 0) {
+        let body: any = {};
+        try {
+          const raw = await response.text();
+          body = raw ? JSON.parse(raw) : {};
+        } catch {}
+        res.status(200).json({
+          online: true,
+          reachable: true,
+          statusCode: response.status,
+          endpoint: path,
+          uptime: body.uptime ?? null,
+        });
+        return;
+      }
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  res.status(200).json({
+    online: false,
+    reachable: false,
+    error: lastError,
+  });
+});
+
+// POST /pairing/request
+router.post("/pairing/request", async (req: any, res: any): Promise<void> => {
+  const user = await getUserFromRequest(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const { phoneNumber, method, pairingMode = "custom" } = req.body;
+  const mode = String(pairingMode || "custom").toLowerCase();
+  const phone = String(phoneNumber || "").replace(/[^0-9]/g, "");
 
   if (!phone || !method) {
-    res.status(400).json({ error: 'Phone number and method are required' });
+    res.status(400).json({ error: "Phone number and method are required" });
     return;
   }
 
   if (phone.length < 7 || phone.length > 15) {
-    res.status(400).json({ error: 'Use an international phone number with country code' });
+    res.status(400).json({
+      error: "Use an international phone number with country code",
+    });
     return;
   }
 
-  if (method !== 'code') {
-    res.status(400).json({ error: 'This VPS bot currently supports pairing codes only' });
+  if (method !== "code") {
+    res.status(400).json({
+      error: "This VPS bot currently supports pairing codes only",
+    });
     return;
   }
 
-  if (mode !== 'custom') {
-    res.status(400).json({ error: 'This VPS bot supports custom pairing only' });
+  if (mode !== "custom") {
+    res.status(400).json({ error: "This VPS bot supports custom pairing only" });
     return;
   }
 
   let botPair: any;
   try {
-    botPair = await botRequest(`/pair?phone=${encodeURIComponent(phone)}&mode=${encodeURIComponent(mode)}`);
+    botPair = await botRequest(
+      `/pair?phone=\( {encodeURIComponent(phone)}&mode= \){encodeURIComponent(mode)}`,
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'The VPS bot could not create a pairing code';
+    const message =
+      error instanceof Error
+        ? error.message
+        : "The VPS bot could not create a pairing code";
     res.status(502).json({ error: message });
     return;
   }
 
-  const pairingCode = String(botPair.code || '').toUpperCase();
+  const pairingCode = String(botPair.code || "").toUpperCase();
   if (!pairingCode) {
-    res.status(502).json({ error: 'The VPS bot returned no pairing code' });
+    res.status(502).json({ error: "The VPS bot returned no pairing code" });
     return;
   }
 
@@ -148,17 +203,27 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
     userId: user.id,
     sessionId,
     phoneNumber: phone,
-    method: 'code',
+    method: "code",
     pairingCode,
     qrData: null,
     connected: false,
     expiresAt,
   });
 
-  await addConsoleLog(user.id, sessionId, 'info', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] ${mode} pairing code requested from VPS for ${phone}`);
-  await addConsoleLog(user.id, sessionId, 'info', `[PAIRING] Code received: ${pairingCode}`);
+  await addConsoleLog(
+    user.id,
+    sessionId,
+    "info",
+    `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] ${mode} pairing code requested from VPS for ${phone}`,
+  );
+  await addConsoleLog(
+    user.id,
+    sessionId,
+    "info",
+    `[PAIRING] Code received: ${pairingCode}`,
+  );
 
-  req.log.info({ userId: user.id, sessionId, phone }, 'VPS pairing session created');
+  req.log.info({ userId: user.id, sessionId, phone }, "VPS pairing session created");
 
   res.json({
     sessionId,
@@ -168,11 +233,11 @@ router.post('/pairing/request', async (req: any, res: any): Promise<void> => {
   });
 });
 
-// GET /pairing/status
-router.get('/pairing/status', async (req: any, res: any): Promise<void> => {
+// GET /pairing/status — WhatsApp session only
+router.get("/pairing/status", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
-    res.status(401).json({ error: 'Not authenticated' });
+    res.status(401).json({ error: "Not authenticated" });
     return;
   }
 
@@ -184,14 +249,22 @@ router.get('/pairing/status', async (req: any, res: any): Promise<void> => {
     .limit(1);
 
   if (!session) {
-    res.json({ connected: false, phoneNumber: null, sessionId: null, connectedAt: null, uptimeSeconds: null, lastSeen: null });
+    res.json({
+      connected: false,
+      phoneNumber: null,
+      sessionId: null,
+      connectedAt: null,
+      uptimeSeconds: null,
+      lastSeen: null,
+    });
     return;
   }
 
   try {
     session = await syncBotStatus(session);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to reach the VPS bot';
+    const message =
+      error instanceof Error ? error.message : "Unable to reach the VPS bot";
     res.status(502).json({ error: message });
     return;
   }
@@ -228,10 +301,10 @@ router.get('/pairing/status', async (req: any, res: any): Promise<void> => {
 });
 
 // POST /pairing/disconnect
-router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => {
+router.post("/pairing/disconnect", async (req: any, res: any): Promise<void> => {
   const user = await getUserFromRequest(req);
   if (!user) {
-    res.status(401).json({ error: 'Not authenticated' });
+    res.status(401).json({ error: "Not authenticated" });
     return;
   }
 
@@ -244,12 +317,13 @@ router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => 
 
   if (session) {
     try {
-      await botRequest('/session/clear', {
-        method: 'POST',
+      await botRequest("/session/clear", {
+        method: "POST",
         body: JSON.stringify({ phone: session.phoneNumber }),
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to reach the VPS bot';
+      const message =
+        error instanceof Error ? error.message : "Unable to reach the VPS bot";
       res.status(502).json({ error: message });
       return;
     }
@@ -259,16 +333,26 @@ router.post('/pairing/disconnect', async (req: any, res: any): Promise<void> => 
       .set({ connected: false, connectedAt: null })
       .where(eq(pairingSessionsTable.sessionId, session.sessionId));
 
-    await addConsoleLog(user.id, session.sessionId, 'warn', `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`);
-    await addConsoleLog(user.id, session.sessionId, 'info', '[SYSTEM] Session terminated.');
+    await addConsoleLog(
+      user.id,
+      session.sessionId,
+      "warn",
+      `[ᴍᴀᴅᴀʀᴀ x-ᴍᴅ] Bot disconnected from ${session.phoneNumber}`,
+    );
+    await addConsoleLog(
+      user.id,
+      session.sessionId,
+      "info",
+      "[SYSTEM] Session terminated.",
+    );
   }
 
-  req.log.info({ userId: user.id }, 'Bot disconnected');
-  res.json({ message: 'Bot disconnected successfully' });
+  req.log.info({ userId: user.id }, "Bot disconnected");
+  res.json({ message: "Bot disconnected successfully" });
 });
 
 // GET /pairing/stats
-router.get("/pairing/stats", async (req: any, res: any): Promise<void> => {
+router.get("/pairing/stats", async (_req: any, res: any): Promise<void> => {
   const allSessions = await db.select().from(pairingSessionsTable);
   const activeSessions = allSessions.filter((s) => s.connected);
 
@@ -280,7 +364,7 @@ router.get("/pairing/stats", async (req: any, res: any): Promise<void> => {
           activeSessions.reduce((acc, s) => {
             if (!s.connectedAt) return acc;
             return acc + (Date.now() - s.connectedAt.getTime()) / 1000;
-          }, 0) / activeSessions.length
+          }, 0) / activeSessions.length,
         )
       : 0;
 
